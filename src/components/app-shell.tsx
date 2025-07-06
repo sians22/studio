@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList, PlusCircle } from "lucide-react";
+import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/icons";
 import CustomerDashboard from "@/components/customer/customer-dashboard";
@@ -45,8 +45,8 @@ export default function AppShell() {
     switch (user?.role) {
       case "customer":
         return [
-          { id: "home", label: "Orders", icon: ClipboardList, action: () => setActiveTab("home") },
-          { id: "create", label: "New Order", icon: PlusCircle, action: () => setActiveTab("create") },
+          { id: "home", label: "Home", icon: Home, action: () => setActiveTab("home") },
+          { id: "create", label: "Orders", icon: ClipboardList, action: () => setActiveTab("create") },
           { id: "browse", label: "Browse", icon: Search, action: () => setActiveTab("browse") },
           { id: "account", label: "Account", icon: User, action: () => setActiveTab("account") },
         ];
