@@ -40,11 +40,8 @@ const searchAddressFlow = ai.defineFlow(
         throw new Error("Ключ API Яндекс не настроен. Пожалуйста, получите ключ и добавьте его в файл .env.");
     }
 
-    // Bounding box for Chechen Republic: [lon,lat~lon,lat] -> [44.5,42.4~46.8,44.0]
-    const bbox = "44.5,42.4~46.8,44.0";
-    
-    // Using Yandex Maps Geocoding API, relying on bbox for region restriction
-    const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${encodeURIComponent(query)}&format=json&lang=ru_RU&results=20&bbox=${bbox}&rspn=1`;
+    // Worldwide search, results are prioritized by Yandex based on relevance and language.
+    const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${encodeURIComponent(query)}&format=json&lang=ru_RU&results=20`;
     
     try {
       const response = await fetch(url);
