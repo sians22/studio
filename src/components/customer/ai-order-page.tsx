@@ -1,15 +1,20 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useOrders } from '@/context/order-context';
 import { useAuth } from '@/context/auth-context';
 import { usePricing } from '@/context/pricing-context';
-import { createOrderFromText, CreateOrderFromTextOutput } from '@/ai/flows/create-order-from-text';
+import { processChat, ConversationalOrderOutput } from '@/ai/flows/conversational-order';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Sparkles, MapPin, Wallet, Phone, MessageSquareText, Rocket, Wand2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Sparkles, MapPin, Wallet, Phone, MessageSquareText, Rocket, Wand2, Send, User, Bot } from 'lucide-react';
+
+type ChatMessage = {
+  role: 'user' | 'model';
+  content: string;
+}
 
 export default function AiOrderPage({ onOrderCreated }: { onOrderCreated: () => void }) {
   const { toast } = useToast();
@@ -17,23 +22,68 @@ export default function AiOrderPage({ onOrderCreated }: { onOrderCreated: () => 
   const { user } = useAuth();
   const { tiers: pricingTiers } = usePricing();
 
-  const [userInput, setUserInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [confirmedOrder, setConfirmedOrder] = useState<CreateOrderFromTextOutput | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [orderConfirmation, setOrderConfirmation] = useState<ConversationalOrderOutput['orderData'] | null>(null);
 
-  const handleProcessRequest = async () => {
-    if (!userInput.trim()) {
-        toast({ variant: 'destructive', title: 'Ошибка', description: 'Пожалуйста, введите ваш запрос.' });
-        return;
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    // Scroll to bottom when messages change
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
     }
+  }, [messages]);
+
+  // Initial greeting from the bot
+  useEffect(() => {
+    const getInitialMessage = async () => {
+        setIsLoading(true);
+        try {
+            const result = await processChat({ chatHistory: [], pricingTiers });
+            setMessages([{ role: 'model', content: result.response }]);
+        } catch (error: any) {
+            toast({ variant: 'destructive', title: 'Ошибка AI', description: error.message });
+        } finally {
+            setIsLoading(false);
+        }
+    };
+    getInitialMessage();
+  }, [pricingTiers, toast]);
+
+
+  const handleSend = async () => {
+    if (!input.trim() || isLoading || !user) return;
+
+    const userMessage: ChatMessage = { role: 'user', content: input };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setInput('');
     setIsLoading(true);
-    setConfirmedOrder(null);
+
     try {
-      const result = await createOrderFromText({
-        query: userInput,
+      const result = await processChat({
+        chatHistory: newMessages,
         pricingTiers,
       });
-      setConfirmedOrder(result);
+      
+      setMessages(prev => [...prev, { role: 'model', content: result.response }]);
+
+      if (result.isComplete && result.orderData) {
+        addOrder({
+            customerId: user.id,
+            pickupAddress: result.orderData.pickupAddress,
+            dropoffAddress: result.orderData.dropoffAddress,
+            senderPhone: result.orderData.senderPhone,
+            receiverPhone: result.orderData.receiverPhone,
+            description: result.orderData.description,
+            price: result.orderData.priceTl,
+            distance: result.orderData.distanceKm,
+        });
+        setOrderConfirmation(result.orderData);
+      }
+
     } catch (error: any) {
       console.error(error);
       toast({ 
@@ -42,82 +92,42 @@ export default function AiOrderPage({ onOrderCreated }: { onOrderCreated: () => 
           description: error.message,
           duration: 9000,
       });
+       setMessages(prev => [...prev, { role: 'model', content: "Что-то пошло не так. Пожалуйста, попробуйте еще раз." }]);
     } finally {
       setIsLoading(false);
     }
   };
-
-  const handleConfirmOrder = () => {
-    if (!confirmedOrder || !user) return;
-    addOrder({
-      customerId: user.id,
-      pickupAddress: confirmedOrder.pickupAddress,
-      dropoffAddress: confirmedOrder.dropoffAddress,
-      senderPhone: confirmedOrder.senderPhone || '',
-      receiverPhone: confirmedOrder.receiverPhone || '',
-      description: confirmedOrder.description,
-      price: confirmedOrder.priceTl,
-      distance: confirmedOrder.distanceKm,
-    });
-    toast({ title: 'Заказ создан!', description: 'Ваш заказ успешно размещен.' });
-    onOrderCreated();
-  };
   
-  const resetState = () => {
-      setUserInput('');
-      setConfirmedOrder(null);
-      setIsLoading(false);
-  }
-
-  if (confirmedOrder) {
-    return (
+  if (orderConfirmation) {
+     return (
         <div className="container mx-auto max-w-2xl p-4">
              <Card>
                 <CardHeader>
-                    <CardTitle>Подтвердите ваш заказ</CardTitle>
-                    <CardDescription>Пожалуйста, проверьте детали, сгенерированные ИИ, перед подтверждением.</CardDescription>
+                    <CardTitle>Заказ успешно размещен!</CardTitle>
+                    <CardDescription>Спасибо! Ваш заказ был создан и скоро будет назначен курьер.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <div className="space-y-2 rounded-lg border p-3">
+                     <div className="space-y-2 rounded-lg border p-3">
                         <div className="flex items-start gap-3">
                             <MapPin className="h-5 w-5 mt-1 text-primary" />
                             <div>
                                 <p className="text-sm font-medium">Откуда:</p>
-                                <p className="text-muted-foreground">{confirmedOrder.pickupAddress}</p>
+                                <p className="text-muted-foreground">{orderConfirmation.pickupAddress}</p>
                             </div>
                         </div>
                         <div className="flex items-start gap-3">
                             <MapPin className="h-5 w-5 mt-1 text-destructive" />
                             <div>
                                 <p className="text-sm font-medium">Куда:</p>
-                                <p className="text-muted-foreground">{confirmedOrder.dropoffAddress}</p>
+                                <p className="text-muted-foreground">{orderConfirmation.dropoffAddress}</p>
                             </div>
                         </div>
                     </div>
-
-                    <div className="flex items-center justify-between rounded-lg bg-muted p-3">
-                        <div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground"><MapPin className="h-4 w-4" /> Расстояние</div>
-                            <div className="font-bold">{confirmedOrder.distanceKm} km</div>
-                        </div>
-                        <div>
-                            <div className="flex items-center gap-2 text-sm text-muted-foreground"><Wallet className="h-4 w-4" /> Цена</div>
-                            <div className="text-2xl font-bold text-primary">{confirmedOrder.priceTl} руб.</div>
-                        </div>
-                    </div>
-                    
-                    {confirmedOrder.senderPhone && <p className="text-sm"><Phone className="inline h-4 w-4 mr-2" /> <strong>Телефон отправителя:</strong> {confirmedOrder.senderPhone}</p>}
-                    {confirmedOrder.receiverPhone && <p className="text-sm"><Phone className="inline h-4 w-4 mr-2" /> <strong>Телефон получателя:</strong> {confirmedOrder.receiverPhone}</p>}
-                    {confirmedOrder.description && <p className="text-sm"><MessageSquareText className="inline h-4 w-4 mr-2" /> <strong>Примечание:</strong> {confirmedOrder.description}</p>}
-
+                     <p className="text-sm"><Wallet className="inline h-4 w-4 mr-2" /> <strong>Цена:</strong> {orderConfirmation.priceTl} руб.</p>
                 </CardContent>
-                <CardFooter className="flex flex-col gap-2 md:flex-row">
-                    <Button className="w-full" onClick={handleConfirmOrder}>
-                        <Rocket className="mr-2"/>
-                        Подтвердить и заказать
-                    </Button>
-                     <Button variant="outline" className="w-full" onClick={() => setConfirmedOrder(null)}>
-                        Назад
+                <CardFooter>
+                    <Button className="w-full" onClick={onOrderCreated}>
+                        К моим заказам
                     </Button>
                 </CardFooter>
              </Card>
@@ -125,29 +135,59 @@ export default function AiOrderPage({ onOrderCreated }: { onOrderCreated: () => 
     )
   }
 
+
   return (
-    <div className="container mx-auto max-w-2xl p-4">
-        <Card>
+    <div className="container mx-auto max-w-2xl p-4 flex flex-col h-[calc(100vh-80px)] md:h-auto">
+        <Card className="flex flex-col flex-1">
             <CardHeader>
-                <CardTitle className="flex items-center gap-2"><Wand2 /> Создать заказ с помощью ИИ</CardTitle>
+                <CardTitle className="flex items-center gap-2"><Wand2 /> Создать заказ с помощью AI</CardTitle>
                 <CardDescription>
-                    Опишите ваш заказ в свободной форме. Например: "Нужно забрать документы из Таксима и доставить в Галатскую башню. Мой номер 555-123, получателя 555-456."
+                    Ответьте на вопросы чат-бота, чтобы быстро оформить заказ на доставку.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
-                <Textarea 
-                    placeholder="Напишите ваш запрос здесь..."
-                    rows={6}
-                    value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
-                    disabled={isLoading}
-                />
+            <CardContent ref={chatContainerRef} className="flex-1 space-y-4 overflow-y-auto pr-6">
+                {messages.map((msg, index) => (
+                    <div key={index} className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : ''}`}>
+                         {msg.role === 'model' && (
+                            <div className="p-2 bg-primary/10 rounded-full">
+                                <Bot className="h-5 w-5 text-primary" />
+                            </div>
+                        )}
+                        <div className={`rounded-lg p-3 max-w-[80%] ${msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                            <p className="text-sm">{msg.content}</p>
+                        </div>
+                         {msg.role === 'user' && (
+                            <div className="p-2 bg-muted rounded-full">
+                                <User className="h-5 w-5 text-foreground" />
+                            </div>
+                        )}
+                    </div>
+                ))}
+                {isLoading && (
+                     <div className="flex items-start gap-3">
+                        <div className="p-2 bg-primary/10 rounded-full">
+                            <Bot className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="rounded-lg p-3 bg-muted flex items-center">
+                           <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                        </div>
+                    </div>
+                )}
             </CardContent>
-            <CardFooter>
-                 <Button className="w-full" onClick={handleProcessRequest} disabled={isLoading}>
-                    {isLoading ? <Loader2 className="animate-spin" /> : <Sparkles className="mr-2"/>}
-                    Обработать запрос
-                </Button>
+            <CardFooter className="pt-4 border-t">
+                 <div className="flex w-full items-center space-x-2">
+                    <Input 
+                        placeholder="Напишите ваш ответ..."
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                        disabled={isLoading}
+                    />
+                    <Button onClick={handleSend} disabled={isLoading}>
+                        <Send className="h-4 w-4" />
+                        <span className="sr-only">Отправить</span>
+                    </Button>
+                </div>
             </CardFooter>
         </Card>
     </div>
