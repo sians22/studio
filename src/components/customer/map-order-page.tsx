@@ -70,13 +70,6 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     }
   };
 
-  useEffect(() => {
-    if (pickup && dropoff) {
-      handleCalculate();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pickup, dropoff]);
-
   const handleCalculate = async () => {
     if (!pickup || !dropoff) return;
     setIsLoading(true);
@@ -91,7 +84,12 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
       setPriceInfo(result);
       setStep('details');
     } catch (error: any) {
-      toast({ variant: 'destructive', title: 'Ошибка', description: error.message || 'Не удалось рассчитать стоимость.' });
+      toast({ 
+          variant: 'destructive', 
+          title: 'Ошибка расчета маршрута', 
+          description: 'Не удалось проложить маршрут. Пожалуйста, попробуйте другие адреса или убедитесь, что ваш API-ключ имеет доступ к "Directions API".',
+          duration: 6000,
+      });
       // Reset if calculation fails
       setDropoff(null);
       setStep('dropoff');
@@ -99,6 +97,13 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (pickup && dropoff) {
+      handleCalculate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickup, dropoff]);
 
   const handleConfirm = () => {
     if (!pickup || !dropoff || !priceInfo || !user) return;
