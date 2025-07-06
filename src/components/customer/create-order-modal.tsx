@@ -142,15 +142,20 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
     }
     
     setIsSearching(true);
-    setSuggestions(['Поиск...']);
+    // Immediately show user's input and a search indicator.
+    // This makes what they've typed selectable right away.
+    setSuggestions([value, 'Поиск...']);
 
     debounceTimeout.current = setTimeout(async () => {
       try {
         const results = await searchAddress({ query: value });
-        setSuggestions(results.length > 0 ? results : ['Ничего не найдено.']);
+        // Prepend user's own input to the list of API results and remove duplicates.
+        const suggestionsWithUserInput = [value, ...results.filter(r => r.toLowerCase() !== value.toLowerCase())];
+        setSuggestions(suggestionsWithUserInput);
       } catch (error) {
         console.error("Error searching address:", error);
-        setSuggestions(['Ошибка поиска.']);
+        // In case of an error, still allow the user to select what they typed.
+        setSuggestions([value, 'Ошибка поиска.']);
       } finally {
         setIsSearching(false);
       }
@@ -176,8 +181,8 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
     return (
       <div className="absolute z-20 w-full mt-1 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
         {suggestions.map((s, i) => (
-          <div key={`${s}-${i}`} onMouseDown={() => handleSuggestionClick(s, fieldName)} className={cn("p-2 text-sm flex items-center gap-2", isSearching && s === 'Поиск...' ? 'text-muted-foreground' : 'cursor-pointer hover:bg-muted')}>
-            {isSearching && s === 'Поиск...' && <Loader2 className="h-4 w-4 animate-spin" />}
+          <div key={`${s}-${i}`} onMouseDown={() => handleSuggestionClick(s, fieldName)} className={cn("p-2 text-sm flex items-center gap-2", ['Поиск...', 'Ничего не найдено.', 'Ошибка поиска.'].includes(s) ? 'text-muted-foreground' : 'cursor-pointer hover:bg-muted')}>
+            {s === 'Поиск...' && <Loader2 className="h-4 w-4 animate-spin" />}
             {s}
           </div>
         ))}
@@ -200,7 +205,7 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
       case 'pickupDetails':
         return (
           <div>
-            <DialogDescription>Уточните адрес отправления (необязательно).</DialogDescription>
+            <DialogDescription>Уточните адрес отправления (квартира, офис и т.д.).</DialogDescription>
             <div className="relative mt-4">
               <Input placeholder="Квартира, офис, подъезд" value={formData.pickupDetails} onChange={e => setFormData({...formData, pickupDetails: e.target.value})} autoComplete="off" />
             </div>
@@ -219,7 +224,7 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
       case 'dropoffDetails':
         return (
           <div>
-            <DialogDescription>Уточните адрес доставки (необязательно).</DialogDescription>
+            <DialogDescription>Уточните адрес доставки (квартира, офис и т.д.).</DialogDescription>
             <div className="relative mt-4">
               <Input placeholder="Квартира, офис, подъезд" value={formData.dropoffDetails} onChange={e => setFormData({...formData, dropoffDetails: e.target.value})} autoComplete="off" />
             </div>
