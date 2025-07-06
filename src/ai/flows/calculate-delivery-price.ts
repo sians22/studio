@@ -28,6 +28,9 @@ async function getRoute(startCoords: [number, number], endCoords: [number, numbe
 
         if (!response.ok) {
             console.error("Yandex Directions API error response:", JSON.stringify(data, null, 2));
+             if(response.status === 401) {
+                throw new Error("Ошибка аутентификации (401). Ваш ключ API недействителен или у него нет доступа к 'Directions API'. Пожалуйста, проверьте в Кабинете разработчика Яндекс, что для вашего ключа подключен сервис 'Directions API'.");
+            }
             if(response.status === 403) {
                 throw new Error("Ошибка доступа к API Маршрутов (403). Убедитесь, что ваш ключ имеет права на 'Directions API' в кабинете разработчика Яндекс.");
             }
