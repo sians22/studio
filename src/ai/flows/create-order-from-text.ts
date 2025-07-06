@@ -56,6 +56,7 @@ export async function createOrderFromText(input: CreateOrderFromTextInput): Prom
 // Prompt to extract structured information from the user's text
 const extractionPrompt = ai.definePrompt({
     name: 'orderExtractionPrompt',
+    model: 'googleai/gemini-1.5-flash-latest',
     input: { schema: z.object({ query: z.string() }) },
     output: { schema: ExtractedInfoSchema },
     prompt: `You are an intelligent order processing agent for a courier service. Your task is to extract delivery details from the user's request.
