@@ -14,10 +14,10 @@ import type { PricingTier } from '@/context/pricing-context';
 
 // Helper function to get route distance from Yandex Maps Directions API
 async function getRoute(startCoords: [number, number], endCoords: [number, number]): Promise<{ distance: number; geometry: number[][] }> {
-    const apiKey = process.env.YANDEX_API_KEY;
+    const apiKey = process.env.YANDEX_ROUTING_API_KEY;
      if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
-        console.error("Yandex API key is not set or is a placeholder in the .env file.");
-        throw new Error("Ключ API Яндекс не настроен. Пожалуйста, получите ключ и добавьте его в файл .env.");
+        console.error("Yandex Routing API key is not set or is a placeholder in the .env file.");
+        throw new Error("Ключ API Маршрутизации Яндекс не настроен. Пожалуйста, получите ключ и добавьте его в файл .env как YANDEX_ROUTING_API_KEY.");
     }
     // Yandex Directions API expects lon,lat format for waypoints
     const waypoints = `${startCoords[1]},${startCoords[0]}|${endCoords[1]},${endCoords[0]}`;

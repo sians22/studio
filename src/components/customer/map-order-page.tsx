@@ -181,7 +181,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     return { center: [43.318, 45.698], zoom: 12, bounds: undefined }; // Grozny coordinates
   }, [pickup, dropoff, priceInfo]);
 
-  const apiKey = process.env.NEXT_PUBLIC_YANDEX_API_KEY;
+  const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY;
 
   if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
     return (
@@ -190,7 +190,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
                 <CardHeader>
                     <CardTitle className="text-destructive">Ошибка Конфигурации</CardTitle>
                     <CardDescription>
-                        Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что `NEXT_PUBLIC_YANDEX_API_KEY` корректно добавлен в ваш `.env` файл.
+                        Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что `NEXT_PUBLIC_YANDEX_MAP_API_KEY` корректно добавлен в ваш `.env` файл.
                     </CardDescription>
                 </CardHeader>
             </Card>

@@ -34,10 +34,10 @@ const searchAddressFlow = ai.defineFlow(
     outputSchema: SearchAddressOutputSchema,
   },
   async ({ query }) => {
-    const apiKey = process.env.YANDEX_API_KEY;
+    const apiKey = process.env.YANDEX_GEOCODER_API_KEY;
     if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
-        console.error("Yandex API key is not set or is a placeholder in the .env file.");
-        throw new Error("Ключ API Яндекс не настроен. Пожалуйста, получите ключ и добавьте его в файл .env.");
+        console.error("Yandex Geocoder API key is not set or is a placeholder in the .env file.");
+        throw new Error("Ключ API Геокодера Яндекс не настроен. Пожалуйста, получите ключ и добавьте его в файл .env как YANDEX_GEOCODER_API_KEY.");
     }
 
     // Worldwide search, results are prioritized by Yandex based on relevance and language.
