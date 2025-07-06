@@ -15,7 +15,7 @@ export default function LoginPage() {
   const handleRegister = () => {
     if (!hwid) return;
     const message = `Здравствуйте, я хочу зарегистрировать нового пользователя. Мой ID устройства: ${hwid}`;
-    const whatsappUrl = `https://wa.me/905555555555?text=${encodeURIComponent(message)}`;
+    const whatsappUrl = `https://wa.me/79286929192?text=${encodeURIComponent(message)}`;
     window.open(whatsappUrl, '_blank');
   };
 

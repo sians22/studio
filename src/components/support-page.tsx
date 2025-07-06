@@ -41,7 +41,7 @@ export default function SupportPage({ onBack }: SupportPageProps) {
               <p className="text-sm text-muted-foreground">Наша команда готова вам помочь.</p>
             </div>
             <Button asChild className="shrink-0 bg-accent text-accent-foreground hover:bg-accent/90">
-              <a href={`https://wa.me/905555555555?text=${encodeURIComponent("Помогите, пожалуйста")}`} target="_blank" rel="noopener noreferrer">
+              <a href={`https://wa.me/79286929192?text=${encodeURIComponent("Помогите, пожалуйста")}`} target="_blank" rel="noopener noreferrer">
                   Связаться с поддержкой
               </a>
             </Button>
