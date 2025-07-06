@@ -119,6 +119,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
         pickupAddress: pickup.address,
         dropoffAddress: dropoff.address,
         pickupCoords: pickup.coords,
+        dropoffCoords: dropoff.coords,
         pricingTiers,
       });
       setPriceInfo(result);
