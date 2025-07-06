@@ -3,21 +3,14 @@
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import { Logo } from "./icons";
-import { MessageCircle, Copy, Check } from "lucide-react";
+import { Copy, Check, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function LoginPage() {
-  const { hwid } = useAuth();
+  const { hwid, registerNewUser } = useAuth();
   const { toast } = useToast();
   const [copied, setCopied] = useState(false);
-
-  const handleRegister = () => {
-    if (!hwid) return;
-    const message = `Здравствуйте, я хочу зарегистрировать нового пользователя. Мой ID устройства: ${hwid}`;
-    const whatsappUrl = `https://wa.me/79286929192?text=${encodeURIComponent(message)}`;
-    window.open(whatsappUrl, '_blank');
-  };
 
   const handleCopy = () => {
     if (hwid) {
@@ -41,7 +34,7 @@ export default function LoginPage() {
         <div className="w-full rounded-2xl border border-primary/20 bg-neutral-900/50 p-8 shadow-2xl shadow-primary/10 backdrop-blur-sm">
           <h1 className="text-3xl font-bold tracking-tighter text-neutral-50">Устройство не зарегистрировано</h1>
           <p className="mt-3 text-base text-neutral-400">
-            Чтобы использовать приложение, ваше устройство должно быть одобрено администратором.
+            Чтобы использовать приложение, ваше устройство должно быть зарегистрировано.
           </p>
 
           <div className="mt-8">
@@ -64,31 +57,18 @@ export default function LoginPage() {
           </div>
           
           <p className="mt-8 text-sm text-neutral-500">
-            Нажмите кнопку ниже, чтобы отправить ID вашего устройства администратору через WhatsApp для регистрации.
+             Нажмите кнопку ниже, чтобы автоматически создать аккаунт клиента и войти в систему.
           </p>
 
           <Button
-            onClick={handleRegister}
+            onClick={registerNewUser}
             size="lg"
-            className="mt-6 w-full bg-green-600 text-base font-bold text-white transition-all duration-300 hover:bg-green-500 hover:shadow-lg hover:shadow-green-500/30"
+            className="mt-6 w-full bg-primary text-base font-bold text-primary-foreground transition-all duration-300 hover:bg-primary/90 hover:shadow-lg hover:shadow-primary/30"
           >
-            <MessageCircle className="mr-2 h-5 w-5" />
-            Зарегистрироваться через WhatsApp
+            <UserPlus className="mr-2 h-5 w-5" />
+            Зарегистрироваться и войти
           </Button>
         </div>
-
-        <div className="w-full max-w-sm rounded-lg border border-neutral-800 bg-neutral-900/80 p-4 text-center">
-          <h3 className="font-bold text-neutral-300">Для тестирования</h3>
-          <p className="mt-2 text-xs text-neutral-400">
-            Чтобы использовать один из демо-аккаунтов, добавьте один из следующих HWID в панели администратора:
-          </p>
-          <ul className="mt-3 space-y-1 text-left text-xs text-neutral-500">
-            <li className="flex items-center gap-2"><span className="font-mono text-primary/70">hwid-customer</span> (Клиент)</li>
-            <li className="flex items-center gap-2"><span className="font-mono text-primary/70">hwid-courier</span> (Курьер)</li>
-            <li className="flex items-center gap-2"><span className="font-mono text-primary/70">hwid-admin</span> (Админ)</li>
-          </ul>
-        </div>
-
       </main>
     </div>
   );

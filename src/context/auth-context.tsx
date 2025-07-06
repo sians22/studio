@@ -9,7 +9,8 @@ interface AuthContextType {
   hwid: string | null;
   logout: () => void;
   users: User[];
-  addUser: (user: Omit<User, 'id' | 'id'>) => void;
+  addUser: (user: Omit<User, 'id'>) => void;
+  registerNewUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -26,14 +27,10 @@ const getHwid = (): string => {
 };
 
 // Initial mock users. In a real app, this would come from a database.
-// To test, an admin can add one of these HWIDs to a new user.
 const initialUsers: User[] = [
-    { id: "user-1-demo", hwid: "hwid-customer", username: "Демо Клиент", role: "customer" },
     { id: "user-2-demo", hwid: "hwid-courier", username: "Демо Курьер", role: "courier" },
     { id: "user-3-demo", hwid: "hwid-admin", username: "Демо Админ", role: "admin" },
     { id: "user-4-admin", hwid: "caf87390-27d3-4e6d-9eae-b1ac4027c941", username: "Админ", role: "admin" },
-    { id: "user-5-customer", hwid: "546c30d8-729d-494c-99c4-9c3c2fda1087", username: "Новый Клиент", role: "customer" },
-    { id: "user-6-new", hwid: "9838e739-5462-4291-89e2-f584acbfcd09", username: "Новый Пользователь", role: "customer" },
 ];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -42,6 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [users, setUsers] = useState<User[]>(initialUsers);
 
   useEffect(() => {
+    // This effect runs whenever `users` changes, ensuring login if hwid matches.
     const deviceHwid = getHwid();
     setHwid(deviceHwid);
 
@@ -61,7 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const userWithId: User = { ...newUser, id: `user-${Date.now()}`};
     
     setUsers(prevUsers => {
-        // Prevent adding user with duplicate HWID
         if (prevUsers.some(u => u.hwid === userWithId.hwid)) {
             return prevUsers;
         }
@@ -74,8 +71,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const registerNewUser = useCallback(() => {
+    const deviceHwid = getHwid();
+    if (!deviceHwid || users.some(u => u.hwid === deviceHwid)) {
+      return; // Already registered or no HWID
+    }
+    const newUser: User = {
+      id: `user-${Date.now()}`,
+      hwid: deviceHwid,
+      username: `Kullanıcı ${deviceHwid.substring(0, 4)}`,
+      role: 'customer',
+    };
+    setUsers(prevUsers => [...prevUsers, newUser]);
+    // The useEffect will automatically log in the user after `users` state is updated.
+  }, [users]);
+
   return (
-    <AuthContext.Provider value={{ user, hwid, logout, users, addUser }}>
+    <AuthContext.Provider value={{ user, hwid, logout, users, addUser, registerNewUser }}>
       {children}
     </AuthContext.Provider>
   );
