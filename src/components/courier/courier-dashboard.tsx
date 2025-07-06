@@ -4,7 +4,7 @@ import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/order-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Check, MapPin, Map } from "lucide-react";
+import { Package, Check, MapPin, Map, Phone } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export default function CourierDashboard() {
@@ -43,7 +43,7 @@ export default function CourierDashboard() {
                         <CardTitle>Order #{order.id.slice(-6)}</CardTitle>
                         <CardDescription>{order.status}</CardDescription>
                     </CardHeader>
-                     <CardContent className="space-y-1">
+                     <CardContent className="space-y-2">
                         <div className="flex items-center justify-between">
                             <span className="flex items-center gap-2 text-sm">
                                 <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -70,6 +70,16 @@ export default function CourierDashboard() {
                                 </a>
                             </Button>
                         </div>
+                        <div className="border-t my-2"></div>
+                         <div className="flex items-center justify-between text-sm">
+                             <span className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> Sender:</span>
+                             <a href={`tel:${order.senderPhone}`} className="text-primary hover:underline">{order.senderPhone}</a>
+                         </div>
+                         <div className="flex items-center justify-between text-sm">
+                             <span className="flex items-center gap-2"><Phone className="h-4 w-4 text-muted-foreground" /> Receiver:</span>
+                             <a href={`tel:${order.receiverPhone}`} className="text-primary hover:underline">{order.receiverPhone}</a>
+                         </div>
+                         {order.description && <p className="text-sm text-muted-foreground pt-1"><strong>Note:</strong> {order.description}</p>}
                     </CardContent>
                     <CardFooter className="flex gap-2">
                         {order.status === 'Accepted' && (
@@ -110,6 +120,9 @@ export default function CourierDashboard() {
               <CardContent className="space-y-2">
                 <p><strong>From:</strong> {order.pickupAddress}</p>
                 <p><strong>To:</strong> {order.dropoffAddress}</p>
+                <p><strong>Sender Phone:</strong> {order.senderPhone}</p>
+                <p><strong>Receiver Phone:</strong> {order.receiverPhone}</p>
+                {order.description && <p><strong>Note:</strong> {order.description}</p>}
                 <p><strong>Distance:</strong> {order.distance} km</p>
                 <p><strong>Payment:</strong> {order.price} TL</p>
               </CardContent>

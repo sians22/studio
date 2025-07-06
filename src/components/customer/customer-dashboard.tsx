@@ -118,6 +118,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                       </Button>
                   </div>
                   <p><strong>Price:</strong> {order.price} TL</p>
+                  {order.description && <p className="text-sm text-muted-foreground pt-1"><strong>Note:</strong> {order.description}</p>}
                 </CardContent>
                 {canCancel && (
                   <CardFooter>

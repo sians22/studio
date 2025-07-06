@@ -19,6 +19,9 @@ export interface Order {
   courierId?: string;
   pickupAddress: string;
   dropoffAddress: string;
+  senderPhone: string;
+  receiverPhone: string;
+  description?: string;
   status: OrderStatus;
   price: number;
   distance: number;
