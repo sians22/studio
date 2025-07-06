@@ -183,7 +183,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
 
   const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY;
 
-  if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
+  if (!apiKey) {
     return (
         <div className="flex h-screen flex-col items-center justify-center p-4 text-center">
             <Card className="max-w-sm">

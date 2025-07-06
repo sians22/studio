@@ -34,11 +34,11 @@ const searchAddressFlow = ai.defineFlow(
     outputSchema: SearchAddressOutputSchema,
   },
   async ({ query }) => {
-    // Use the dedicated geocoder key for this operation
-    const apiKey = process.env.YANDEX_GEOCODER_API_KEY;
-    if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_ДЛЯ_ГЕОКОДЕРА") {
-        console.error("Yandex Geocoder API key is not set or is a placeholder in the .env file.");
-        throw new Error("Ключ API Яндекс Геокодера не настроен. Пожалуйста, убедитесь, что YANDEX_GEOCODER_API_KEY задан в .env.");
+    // Use the single public map key for all Yandex services
+    const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY;
+    if (!apiKey) {
+        console.error("Yandex API key is not set in the .env file.");
+        throw new Error("Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что NEXT_PUBLIC_YANDEX_MAP_API_KEY задан в .env и имеет права на 'JavaScript API and HTTP Geocoder'.");
     }
 
     // Worldwide search, results are prioritized by Yandex based on relevance and language.

@@ -14,10 +14,10 @@ import type { PricingTier } from '@/context/pricing-context';
 
 // Helper function to get route distance from Yandex Maps Directions API
 async function getRoute(startCoords: [number, number], endCoords: [number, number]): Promise<{ distance: number; geometry: number[][] }> {
-    const apiKey = process.env.YANDEX_MAP_API_KEY; // Using the main map key
-     if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
-        console.error("Yandex Routing API key is not set or is a placeholder in the .env file.");
-        throw new Error("Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что YANDEX_MAP_API_KEY задан в .env.");
+    const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY; // Using the single public map key
+     if (!apiKey) {
+        console.error("Yandex API key is not set in the .env file.");
+        throw new Error("Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что NEXT_PUBLIC_YANDEX_MAP_API_KEY задан в .env.");
     }
     // Yandex Directions API expects lon,lat format for waypoints
     const waypoints = `${startCoords[1]},${startCoords[0]}|${endCoords[1]},${endCoords[0]}`;
@@ -79,6 +79,8 @@ const CalculateDeliveryPriceInputSchema = z.object({
   pricingTiers: z.array(PricingTierSchema).describe('Массив тарифных планов для расчета.'),
 });
 export type CalculateDeliveryPriceInput = z.infer<typeof CalculateDeliveryPriceInputSchema>;
+// This const is for use inside this file or when schema is defined locally in consumer. Not for export.
+const CalculateDeliveryPriceInputSchemaForTool = CalculateDeliveryPriceInputSchema;
 
 const CalculateDeliveryPriceOutputSchema = z.object({
   distanceKm: z.number().describe('Расстояние между точками отправления и доставки в километрах.'),
@@ -87,6 +89,9 @@ const CalculateDeliveryPriceOutputSchema = z.object({
   routeGeometry: z.array(z.array(z.number())).describe('Геометрия маршрута для отрисовки на карте.'),
 });
 export type CalculateDeliveryPriceOutput = z.infer<typeof CalculateDeliveryPriceOutputSchema>;
+// This const is for use inside this file or when schema is defined locally in consumer. Not for export.
+const CalculateDeliveryPriceOutputSchemaForTool = CalculateDeliveryPriceOutputSchema;
+
 
 export async function calculateDeliveryPrice(input: CalculateDeliveryPriceInput): Promise<CalculateDeliveryPriceOutput> {
   return calculateDeliveryPriceFlow(input);
