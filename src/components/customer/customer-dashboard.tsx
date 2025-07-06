@@ -4,11 +4,11 @@ import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/order-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Package, Clock, X, CheckCircle, Truck, Map, PlusCircle } from "lucide-react";
+import { Package, PlusCircle, UserCircle, MoreHorizontal, Heart, MessageCircle, Send, Bookmark } from "lucide-react";
 import CreateOrderForm from "./create-order-form";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
+import Image from "next/image";
 
 type CustomerDashboardProps = {
   activeTab: string;
@@ -22,27 +22,9 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
   const customerOrders = orders.filter((order) => order.customerId === user?.id);
 
   const handleCancelOrder = (orderId: string) => {
-    updateOrderStatus(orderId, "Отменен");
-  };
-
-  const OrderStatusIcon = ({ status }: { status: string }) => {
-    switch (status) {
-      case "Ожидание": return <Clock className="h-4 w-4 text-yellow-500" />;
-      case "Принят": return <CheckCircle className="h-4 w-4 text-blue-500" />;
-      case "В пути": return <Truck className="h-4 w-4 text-blue-500" />;
-      case "Доставлен": return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case "Отменен": return <X className="h-4 w-4 text-red-500" />;
-      default: return <Package className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
-
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case 'Доставлен': return 'default';
-      case 'Отменен': return 'destructive';
-      case 'Принят':
-      case 'В пути': return 'secondary';
-      default: return 'outline';
+    const order = orders.find(o => o.id === orderId);
+    if (order && order.status === "Ожидание") {
+      updateOrderStatus(orderId, "Отменен");
     }
   };
 
@@ -51,87 +33,80 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
   }
 
   return (
-    <div className="container mx-auto max-w-2xl p-4">
-      <div className="mb-6 flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Добро пожаловать, {user?.username}!</h1>
-          <p className="text-muted-foreground">Просмотрите свои прошлые заказы или создайте новый.</p>
-        </div>
-        <Button onClick={() => setActiveTab('create')} size="lg" className="bg-accent hover:bg-accent/90 hidden md:flex">
-            <PlusCircle className="mr-2 h-5 w-5" />
-            Создать заказ
-        </Button>
-      </div>
-
-      <h2 className="mb-4 text-xl font-semibold">История заказов</h2>
+    <div className="container mx-auto max-w-2xl p-0 md:p-4">
       {customerOrders.length === 0 ? (
-        <Card className="text-center">
-          <CardHeader>
-            <CardTitle>Заказов пока нет!</CardTitle>
-            <CardDescription>Нажмите кнопку ниже, чтобы создать свой первый заказ.</CardDescription>
-          </CardHeader>
-          <CardContent>
-             <Package className="mx-auto h-12 w-12 text-muted-foreground" />
-          </CardContent>
-           <CardFooter>
-             <Button onClick={() => setActiveTab('create')} className="w-full">
-                <PlusCircle className="mr-2 h-4 w-4" /> Создать первый заказ
-            </Button>
-           </CardFooter>
-        </Card>
+        <div className="flex h-[calc(100vh-200px)] flex-col items-center justify-center p-4 text-center">
+          <Card className="max-w-sm">
+            <CardHeader>
+              <CardTitle>Заказов пока нет!</CardTitle>
+              <CardDescription>Нажмите кнопку ниже, чтобы создать свой первый заказ.</CardDescription>
+            </CardHeader>
+            <CardContent>
+               <Package className="mx-auto h-12 w-12 text-muted-foreground" />
+            </CardContent>
+             <CardFooter>
+               <Button onClick={() => setActiveTab('create')} className="w-full">
+                  <PlusCircle className="mr-2 h-4 w-4" /> Создать первый заказ
+              </Button>
+             </CardFooter>
+          </Card>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-4 py-4 md:space-y-8">
           {customerOrders.map((order) => {
-            const canCancel = order.status === "Ожидание" && (Date.now() - order.createdAt < 3 * 60 * 1000);
+            const canCancel = order.status === "Ожидание";
             return (
-              <Card key={order.id} className="overflow-hidden">
-                <CardHeader>
-                    <div className="flex items-start justify-between">
-                        <div>
-                            <CardTitle className="text-lg">Заказ №{order.id.slice(-6)}</CardTitle>
-                            <CardDescription>
-                                {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ru })}
-                            </CardDescription>
-                        </div>
-                         <Badge variant={getStatusVariant(order.status)} className="capitalize flex gap-1.5 items-center">
-                           <OrderStatusIcon status={order.status} />
-                           {order.status}
-                         </Badge>
+              <Card key={order.id} className="rounded-none border-x-0 border-b md:rounded-lg md:border">
+                <CardHeader className="flex flex-row items-center justify-between p-3">
+                    <div className="flex items-center gap-3">
+                        <UserCircle className="h-8 w-8 text-muted-foreground" />
+                        <div className="font-bold">Заказ №{order.id.slice(-6)}</div>
                     </div>
-                </CardHeader>
-                <CardContent className="space-y-1">
-                  <div className="flex items-center justify-between">
-                      <p className="text-sm truncate"><strong>Откуда:</strong> {order.pickupAddress}</p>
-                      <Button variant="ghost" size="icon" asChild>
-                          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.pickupAddress)}`} target="_blank" rel="noopener noreferrer">
-                              <Map className="h-5 w-5 text-primary" />
-                              <span className="sr-only">Посмотреть на карте</span>
-                          </a>
-                      </Button>
-                  </div>
-                  <div className="flex items-center justify-between">
-                      <p className="text-sm truncate"><strong>Куда:</strong> {order.dropoffAddress}</p>
-                      <Button variant="ghost" size="icon" asChild>
-                          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.dropoffAddress)}`} target="_blank" rel="noopener noreferrer">
-                              <Map className="h-5 w-5 text-primary" />
-                              <span className="sr-only">Посмотреть на карте</span>
-                          </a>
-                      </Button>
-                  </div>
-                  <p><strong>Цена:</strong> {order.price} руб.</p>
-                  {order.description && <p className="text-sm text-muted-foreground pt-1"><strong>Примечание:</strong> {order.description}</p>}
-                </CardContent>
-                {canCancel && (
-                  <CardFooter>
-                    <Button
-                      variant="destructive"
-                      onClick={() => handleCancelOrder(order.id)}
-                      className="w-full"
-                    >
-                      <X className="mr-2 h-4 w-4" /> Отменить заказ (лимит 3 мин)
+                    <Button variant="ghost" size="icon">
+                      <MoreHorizontal className="h-5 w-5" />
                     </Button>
-                  </CardFooter>
-                )}
+                </CardHeader>
+                
+                <CardContent className="p-0">
+                  <div className="relative aspect-video w-full">
+                    <Image
+                      src="https://placehold.co/600x400.png"
+                      data-ai-hint="map route"
+                      alt="Карта маршрута"
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                </CardContent>
+
+                <CardFooter className="flex flex-col items-start gap-2 p-3">
+                  <div className="flex w-full items-center justify-between">
+                      <div className="flex items-center gap-3">
+                          <Button variant="ghost" size="icon"><Heart className="h-6 w-6" /></Button>
+                          <Button variant="ghost" size="icon"><MessageCircle className="h-6 w-6" /></Button>
+                          <Button variant="ghost" size="icon"><Send className="h-6 w-6" /></Button>
+                      </div>
+                      <Button variant="ghost" size="icon"><Bookmark className="h-6 w-6" /></Button>
+                  </div>
+
+                  <div className="w-full space-y-1 px-1 text-sm">
+                      <p className="font-bold">{order.price} руб.</p>
+                      <p><span className="font-bold">{user?.username}</span>: {order.description || `Доставка из ${order.pickupAddress} в ${order.dropoffAddress}`}</p>
+                      <p className="text-muted-foreground">Статус: {order.status}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ru })}
+                      </p>
+                       {canCancel && (
+                          <Button
+                            variant="link"
+                            className="h-auto p-0 text-destructive"
+                            onClick={() => handleCancelOrder(order.id)}
+                          >
+                            Отменить заказ
+                          </Button>
+                        )}
+                  </div>
+                </CardFooter>
               </Card>
             );
           })}

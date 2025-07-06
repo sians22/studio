@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList } from "lucide-react";
+import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList, Heart, Send } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/icons";
 import CustomerDashboard from "@/components/customer/customer-dashboard";
@@ -11,6 +11,7 @@ import { ThemeSwitcher } from "./theme-switcher";
 import SupportPage from "./support-page";
 import AccountPage from "./account-page";
 import BrowsePage from "./browse-page";
+import { Button } from "./ui/button";
 
 export default function AppShell() {
   const { user } = useAuth();
@@ -72,7 +73,9 @@ export default function AppShell() {
     <div className="flex h-screen flex-col">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-4 py-2 shadow-sm">
         <Logo />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon"><Heart className="h-6 w-6" /></Button>
+          <Button variant="ghost" size="icon"><Send className="h-6 w-6" /></Button>
           <ThemeSwitcher />
         </div>
       </header>
@@ -88,11 +91,10 @@ export default function AppShell() {
             <button
               key={item.id}
               onClick={item.action}
-              className={`flex flex-col items-center justify-center gap-1 p-2 text-xs transition-colors
-                ${activeTab === item.id ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+              className={`flex flex-col items-center justify-center gap-1 p-2 transition-colors
+                ${activeTab === item.id ? "text-primary" : "text-foreground/70 hover:text-foreground"}`}
             >
-              <item.icon className="h-6 w-6" />
-              <span>{item.label}</span>
+              <item.icon className="h-7 w-7" />
             </button>
           ))}
         </div>
