@@ -67,10 +67,10 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                 </CardHeader>
                 
                 <CardContent className="p-0">
-                  <div className="relative aspect-video w-full">
+                  <div className="relative aspect-square w-full">
                     <Image
-                      src="https://placehold.co/600x400.png"
-                      data-ai-hint="delivery car"
+                      src="https://placehold.co/600x600.png"
+                      data-ai-hint="courier car"
                       alt="Изображение доставки"
                       fill
                       className="object-cover"
