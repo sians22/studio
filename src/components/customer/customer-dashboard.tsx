@@ -5,10 +5,11 @@ import { useOrders } from "@/context/order-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, PlusCircle, UserCircle, MoreHorizontal, Heart, MessageCircle, Send, Bookmark } from "lucide-react";
-import CreateOrderForm from "./create-order-form";
+import CreateOrderModal from "./create-order-modal";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
-import Image from "next/image";
+import { useState, useEffect } from "react";
+
 
 type CustomerDashboardProps = {
   activeTab: string;
@@ -18,8 +19,16 @@ type CustomerDashboardProps = {
 export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerDashboardProps) {
   const { user } = useAuth();
   const { orders, updateOrderStatus } = useOrders();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const customerOrders = orders.filter((order) => order.customerId === user?.id);
+
+  useEffect(() => {
+    if (activeTab === 'create') {
+      setIsModalOpen(true);
+      setActiveTab('home'); 
+    }
+  }, [activeTab, setActiveTab]);
 
   const handleCancelOrder = (orderId: string) => {
     const order = orders.find(o => o.id === orderId);
@@ -28,12 +37,10 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
     }
   };
 
-  if (activeTab === "create") {
-    return <CreateOrderForm onOrderCreated={() => setActiveTab("home")} />;
-  }
-
   return (
     <div className="container mx-auto max-w-2xl p-0 md:p-4">
+      <CreateOrderModal isOpen={isModalOpen} onOpenChange={setIsModalOpen} />
+
       {customerOrders.length === 0 ? (
         <div className="flex h-[calc(100vh-200px)] flex-col items-center justify-center p-4 text-center">
           <Card className="max-w-sm">
@@ -45,7 +52,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                <Package className="mx-auto h-12 w-12 text-muted-foreground" />
             </CardContent>
              <CardFooter>
-               <Button onClick={() => setActiveTab('create')} className="w-full">
+               <Button onClick={() => setIsModalOpen(true)} className="w-full">
                   <PlusCircle className="mr-2 h-4 w-4" /> Создать первый заказ
               </Button>
              </CardFooter>
