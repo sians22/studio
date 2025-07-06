@@ -18,7 +18,7 @@ export default function LoginPage() {
   
   const handleRegister = () => {
       if(!hwid) return;
-      const message = `Merhaba, yeni kullanıcı kaydı yapmak istiyorum. Cihaz Kimliğim: ${hwid}`;
+      const message = `Здравствуйте, я хочу зарегистрировать нового пользователя. Мой ID устройства: ${hwid}`;
       const whatsappUrl = `https://wa.me/905555555555?text=${encodeURIComponent(message)}`;
       window.open(whatsappUrl, '_blank');
   }
@@ -30,35 +30,35 @@ export default function LoginPage() {
           <div className="mx-auto mb-4">
             <Logo />
           </div>
-          <CardTitle>Cihazınız Kayıtlı Değil</CardTitle>
+          <CardTitle>Устройство не зарегистрировано</CardTitle>
           <CardDescription>
-            Uygulamayı kullanabilmek için lütfen cihazınızı kaydedin.
+            Пожалуйста, зарегистрируйте ваше устройство, чтобы использовать приложение.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
            <Alert>
               <Terminal className="h-4 w-4" />
-              <AlertTitle>Cihaz Kimliğiniz</AlertTitle>
+              <AlertTitle>ID вашего устройства</AlertTitle>
               <AlertDescription className="break-all font-mono text-xs">
-                {hwid || 'Kimlik üretiliyor...'}
+                {hwid || 'Генерация ID...'}
               </AlertDescription>
             </Alert>
           
           <p className="text-sm text-muted-foreground">
-            Aşağıdaki butona tıklayarak cihaz kimliğinizi yöneticiye iletin. Onaylandıktan sonra uygulamaya erişebileceksiniz.
+            Нажмите кнопку ниже, чтобы отправить ID вашего устройства администратору. После одобрения вы сможете получить доступ к приложению.
           </p>
 
           <Button onClick={handleRegister} className="w-full bg-green-600 hover:bg-green-700 text-white">
             <MessageCircle className="mr-2 h-4 w-4" />
-            WhatsApp ile Kayıt Ol
+            Зарегистрироваться через WhatsApp
           </Button>
 
            <CardDescription className="text-center !mt-8">
-            <span className="font-bold">Test için:</span> Demo hesaplardan birini kullanmak için, yönetici panelinden aşağıdaki HWID'lerden birini ekleyin:
+            <span className="font-bold">Для теста:</span> Чтобы использовать один из демо-аккаунтов, добавьте один из следующих HWID в панели администратора:
             <ul className="text-left text-xs list-disc pl-5 mt-2 space-y-1">
-              <li><strong className="font-mono">hwid-customer</strong> (Müşteri)</li>
-              <li><strong className="font-mono">hwid-courier</strong> (Kurye)</li>
-              <li><strong className="font-mono">hwid-admin</strong> (Admin)</li>
+              <li><strong className="font-mono">hwid-customer</strong> (Клиент)</li>
+              <li><strong className="font-mono">hwid-courier</strong> (Курьер)</li>
+              <li><strong className="font-mono">hwid-admin</strong> (Админ)</li>
             </ul>
           </CardDescription>
         </CardContent>

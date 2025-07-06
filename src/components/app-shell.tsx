@@ -45,21 +45,21 @@ export default function AppShell() {
     switch (user?.role) {
       case "customer":
         return [
-          { id: "home", label: "Home", icon: Home, action: () => setActiveTab("home") },
-          { id: "create", label: "Orders", icon: ClipboardList, action: () => setActiveTab("create") },
-          { id: "browse", label: "Browse", icon: Search, action: () => setActiveTab("browse") },
-          { id: "account", label: "Account", icon: User, action: () => setActiveTab("account") },
+          { id: "home", label: "Главная", icon: Home, action: () => setActiveTab("home") },
+          { id: "create", label: "Заказы", icon: ClipboardList, action: () => setActiveTab("create") },
+          { id: "browse", label: "Обзор", icon: Search, action: () => setActiveTab("browse") },
+          { id: "account", label: "Аккаунт", icon: User, action: () => setActiveTab("account") },
         ];
       case "courier":
         return [
-          { id: "home", label: "Jobs", icon: Briefcase, action: () => setActiveTab("home") },
-          { id: "browse", label: "Browse", icon: Search, action: () => setActiveTab("browse") },
-          { id: "account", label: "Account", icon: User, action: () => setActiveTab("account") },
+          { id: "home", label: "Задания", icon: Briefcase, action: () => setActiveTab("home") },
+          { id: "browse", label: "Обзор", icon: Search, action: () => setActiveTab("browse") },
+          { id: "account", label: "Аккаунт", icon: User, action: () => setActiveTab("account") },
         ];
       case "admin":
          return [
-          { id: "home", label: "Dashboard", icon: LayoutDashboard, action: () => setActiveTab("home") },
-          { id: "account", label: "Account", icon: User, action: () => setActiveTab("account") },
+          { id: "home", label: "Панель", icon: LayoutDashboard, action: () => setActiveTab("home") },
+          { id: "account", label: "Аккаунт", icon: User, action: () => setActiveTab("account") },
         ];
       default:
         return [];

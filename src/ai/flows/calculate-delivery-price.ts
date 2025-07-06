@@ -17,16 +17,16 @@ const PricingTierSchema = z.object({
 });
 
 const CalculateDeliveryPriceInputSchema = z.object({
-  pickupAddress: z.string().describe('The address where the delivery will be picked up from.'),
-  dropoffAddress: z.string().describe('The address where the delivery will be dropped off at.'),
-  pricingTiers: z.array(PricingTierSchema).describe('An array of pricing tiers to use for the calculation.'),
+  pickupAddress: z.string().describe('Адрес, откуда будет осуществляться доставка.'),
+  dropoffAddress: z.string().describe('Адрес, куда будет осуществляться доставка.'),
+  pricingTiers: z.array(PricingTierSchema).describe('Массив тарифных планов для расчета.'),
 });
 export type CalculateDeliveryPriceInput = z.infer<typeof CalculateDeliveryPriceInputSchema>;
 
 const CalculateDeliveryPriceOutputSchema = z.object({
-  distanceKm: z.number().describe('The distance between the pickup and drop-off locations in kilometers.'),
-  priceTl: z.number().describe('The calculated delivery price in Turkish Lira (TL).'),
-  pricingDetails: z.string().describe('Details of how the pricing was calculated based on distance tiers.'),
+  distanceKm: z.number().describe('Расстояние между точками отправления и доставки в километрах.'),
+  priceTl: z.number().describe('Рассчитанная стоимость доставки в турецких лирах (TL).'),
+  pricingDetails: z.string().describe('Подробности о том, как была рассчитана цена на основе тарифных планов.'),
 });
 export type CalculateDeliveryPriceOutput = z.infer<typeof CalculateDeliveryPriceOutputSchema>;
 
@@ -38,14 +38,14 @@ const calculateDeliveryPricePrompt = ai.definePrompt({
   name: 'calculateDeliveryPricePrompt',
   input: {schema: CalculateDeliveryPriceInputSchema},
   output: {schema: CalculateDeliveryPriceOutputSchema},
-  prompt: `You are a delivery price calculator. You take the pickup address and drop-off address as input, calculate the distance between them, and then calculate the delivery price based on the provided dynamic pricing tiers.
+  prompt: `Вы — калькулятор стоимости доставки. Вы принимаете адрес отправления и адрес доставки в качестве входных данных, рассчитываете расстояние между ними, а затем рассчитываете стоимость доставки на основе предоставленных динамических тарифных планов.
 
-Return the distance in kilometers, the calculated price in TL, and a brief explanation of the pricing details.
+Верните расстояние в километрах, рассчитанную цену в TL и краткое объяснение деталей ценообразования.
 
-Pickup Address: {{{pickupAddress}}}
-Drop-off Address: {{{dropoffAddress}}}
+Адрес отправления: {{{pickupAddress}}}
+Адрес доставки: {{{dropoffAddress}}}
 
-Use these pricing tiers for calculation:
+Используйте эти тарифные планы для расчета:
 {{#each pricingTiers}}
 - {{this.range}}: {{this.price}} TL
 {{/each}}

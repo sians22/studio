@@ -7,8 +7,8 @@ import {ThemeProvider} from '@/context/theme-context';
 import { PricingProvider } from '@/context/pricing-context';
 
 export const metadata: Metadata = {
-  title: 'Hızlı Kurye',
-  description: 'Hızlı Kurye - Your fast and reliable delivery partner.',
+  title: 'Быстрый Курьер',
+  description: 'Быстрый Курьер - Ваш быстрый и надежный партнер по доставке.',
   manifest: '/manifest.json',
 };
 
@@ -18,7 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="ru">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

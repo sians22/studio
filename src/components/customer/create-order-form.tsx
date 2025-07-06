@@ -34,11 +34,11 @@ import { Loader2, Rocket, MapPin, Wallet, Phone, MessageSquareText } from 'lucid
 import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
-  pickupAddress: z.string().min(10, 'Please enter a valid pickup address.'),
-  dropoffAddress: z.string().min(10, 'Please enter a valid drop-off address.'),
-  senderPhone: z.string().min(10, 'Please enter a valid phone number.'),
-  receiverPhone: z.string().min(10, 'Please enter a valid phone number.'),
-  description: z.string().max(200, "Description can't be more than 200 characters.").optional(),
+  pickupAddress: z.string().min(10, 'Пожалуйста, введите действительный адрес отправления.'),
+  dropoffAddress: z.string().min(10, 'Пожалуйста, введите действительный адрес доставки.'),
+  senderPhone: z.string().min(10, 'Пожалуйста, введите действительный номер телефона.'),
+  receiverPhone: z.string().min(10, 'Пожалуйста, введите действительный номер телефона.'),
+  description: z.string().max(200, "Описание не может превышать 200 символов.").optional(),
 });
 
 type CreateOrderFormProps = {
@@ -84,15 +84,15 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
     }
     
     setIsSearching(fieldName);
-    setter(['Searching...']);
+    setter(['Поиск...']);
 
     debounceTimeout.current = setTimeout(async () => {
         try {
             const results = await searchAddress({ query: value });
-            setter(results.length > 0 ? results : ['No results found.']);
+            setter(results.length > 0 ? results : ['Ничего не найдено.']);
         } catch (error) {
             console.error("Error searching address:", error);
-            setter(['Error searching.']);
+            setter(['Ошибка поиска.']);
         } finally {
             setIsSearching(null);
         }
@@ -100,7 +100,7 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
   };
 
   const handleSuggestionClick = (suggestion: string, fieldName: 'pickupAddress' | 'dropoffAddress') => {
-      const isStatusMessage = ['Searching...', 'No results found.', 'Error searching.'].includes(suggestion);
+      const isStatusMessage = ['Поиск...', 'Ничего не найдено.', 'Ошибка поиска.'].includes(suggestion);
       if (isStatusMessage) return;
 
       form.setValue(fieldName, suggestion, { shouldValidate: true });
@@ -122,8 +122,8 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
       console.error('Error calculating price:', error);
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: 'Could not calculate delivery price. Please try again.',
+        title: 'Ошибка',
+        description: 'Не удалось рассчитать стоимость доставки. Пожалуйста, попробуйте еще раз.',
       });
     } finally {
       setIsLoading(false);
@@ -144,8 +144,8 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
         distance: priceInfo.distanceKm,
       });
       toast({
-        title: 'Order Created!',
-        description: 'Your order has been placed successfully.',
+        title: 'Заказ создан!',
+        description: 'Ваш заказ успешно размещен.',
       });
       onOrderCreated();
     }
@@ -159,7 +159,7 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
       return (
         <div className="absolute z-10 w-full mt-1 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
             {suggestions.map((s, i) => {
-                const isStatusMessage = ['Searching...', 'No results found.', 'Error searching.'].includes(s);
+                const isStatusMessage = ['Поиск...', 'Ничего не найдено.', 'Ошибка поиска.'].includes(s);
                 return (
                     <div 
                         key={`${s}-${i}`} 
@@ -169,7 +169,7 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                           isStatusMessage ? 'text-muted-foreground' : 'cursor-pointer hover:bg-muted'
                         )}
                     >
-                        {isLoading && s === 'Searching...' && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {isLoading && s === 'Поиск...' && <Loader2 className="h-4 w-4 animate-spin" />}
                         {s}
                     </div>
                 );
@@ -182,9 +182,9 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
     <div className="container mx-auto max-w-2xl p-4">
       <Card>
         <CardHeader>
-          <CardTitle>Create a New Order</CardTitle>
+          <CardTitle>Создать новый заказ</CardTitle>
           <CardDescription>
-            Fill in the details below to get a price quote.
+            Заполните детали ниже, чтобы получить расчет цены.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -199,11 +199,11 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                   name="pickupAddress"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Pickup Address</FormLabel>
+                      <FormLabel>Адрес отправления</FormLabel>
                       <div className="relative">
                         <FormControl>
                           <Input 
-                              placeholder="e.g., Istiklal Avenue, Beyoglu, Istanbul" 
+                              placeholder="например, ул. Тверская, Москва" 
                               {...field}
                               onChange={e => handleAddressChange(e.target.value, 'pickupAddress')}
                               onBlur={() => setTimeout(() => setPickupSuggestions([]), 150)}
@@ -221,11 +221,11 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                   name="dropoffAddress"
                   render={({ field }) => (
                      <FormItem>
-                      <FormLabel>Drop-off Address</FormLabel>
+                      <FormLabel>Адрес доставки</FormLabel>
                        <div className="relative">
                         <FormControl>
                           <Input 
-                              placeholder="e.g., Sultanahmet Square, Fatih, Istanbul" 
+                              placeholder="например, Красная площадь, Москва" 
                               {...field}
                               onChange={e => handleAddressChange(e.target.value, 'dropoffAddress')}
                               onBlur={() => setTimeout(() => setDropoffSuggestions([]), 150)}
@@ -243,7 +243,7 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                   name="senderPhone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Sender's Phone</FormLabel>
+                      <FormLabel>Телефон отправителя</FormLabel>
                        <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <FormControl>
@@ -259,7 +259,7 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                   name="receiverPhone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Receiver's Phone</FormLabel>
+                      <FormLabel>Телефон получателя</FormLabel>
                       <div className="relative">
                         <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <FormControl>
@@ -276,11 +276,11 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                       name="description"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Description (Optional)</FormLabel>
+                          <FormLabel>Описание (необязательно)</FormLabel>
                            <div className="relative">
                               <MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                               <FormControl>
-                                <Textarea placeholder="e.g., It's a fragile item." {...field} className="pl-10" />
+                                <Textarea placeholder="например, Хрупкий предмет." {...field} className="pl-10" />
                               </FormControl>
                            </div>
                           <FormMessage />
@@ -292,7 +292,7 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
               
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? <Loader2 className="animate-spin" /> : <Wallet />}
-                Calculate Price
+                Рассчитать стоимость
               </Button>
             </form>
           </Form>
@@ -300,22 +300,22 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
           {priceInfo && (
             <Card className="mt-6 bg-secondary">
               <CardHeader>
-                <CardTitle>Price Quote</CardTitle>
+                <CardTitle>Расчет стоимости</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-muted-foreground"><MapPin className="h-4 w-4" /> Distance</div>
+                    <div className="flex items-center gap-2 text-muted-foreground"><MapPin className="h-4 w-4" /> Расстояние</div>
                     <div className="font-bold">{priceInfo.distanceKm} km</div>
                 </div>
                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-muted-foreground"><Wallet className="h-4 w-4" /> Price</div>
+                    <div className="flex items-center gap-2 text-muted-foreground"><Wallet className="h-4 w-4" /> Цена</div>
                     <div className="text-2xl font-bold text-primary">{priceInfo.priceTl} TL</div>
                 </div>
                 <p className="text-xs text-muted-foreground pt-2">{priceInfo.pricingDetails}</p>
               </CardContent>
               <CardFooter>
                 <Button className="w-full bg-accent hover:bg-accent/90" onClick={handleConfirmOrder}>
-                  <Rocket className="mr-2 h-4 w-4" /> Confirm Order
+                  <Rocket className="mr-2 h-4 w-4" /> Подтвердить заказ
                 </Button>
               </CardFooter>
             </Card>

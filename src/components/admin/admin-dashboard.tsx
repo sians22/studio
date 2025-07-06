@@ -35,18 +35,18 @@ export default function AdminDashboard() {
 
 
   const totalRevenue = orders
-    .filter(o => o.status === 'Delivered')
+    .filter(o => o.status === 'Доставлен')
     .reduce((sum, o) => sum + o.price, 0);
   
   const totalOrders = orders.length;
-  const ongoingOrders = orders.filter(o => o.status === 'Accepted' || o.status === 'In-transit').length;
+  const ongoingOrders = orders.filter(o => o.status === 'Принят' || o.status === 'В пути').length;
 
   const getStatusVariant = (status: string) => {
     switch (status) {
-      case 'Delivered': return 'default';
-      case 'Cancelled': return 'destructive';
-      case 'Accepted':
-      case 'In-transit': return 'secondary';
+      case 'Доставлен': return 'default';
+      case 'Отменен': return 'destructive';
+      case 'Принят':
+      case 'В пути': return 'secondary';
       default: return 'outline';
     }
   };
@@ -64,16 +64,16 @@ export default function AdminDashboard() {
   const handleSavePricing = () => {
       setTiers(editableTiers);
       setIsPricingDialogOpen(false);
-      toast({ title: 'Success', description: 'Pricing tiers have been updated.' });
+      toast({ title: 'Успех', description: 'Тарифные планы обновлены.' });
   }
 
   const handleAddUser = () => {
       if (!newUserHwid || !newUserName) {
-          toast({ variant: 'destructive', title: 'Error', description: 'HWID and Username are required.' });
+          toast({ variant: 'destructive', title: 'Ошибка', description: 'Требуется HWID и имя пользователя.' });
           return;
       }
       if (users.some(u => u.hwid === newUserHwid)) {
-         toast({ variant: 'destructive', title: 'Error', description: 'This HWID is already registered.' });
+         toast({ variant: 'destructive', title: 'Ошибка', description: 'Этот HWID уже зарегистрирован.' });
          return;
       }
       
@@ -87,50 +87,50 @@ export default function AdminDashboard() {
       setNewUserHwid('');
       setNewUserName('');
       setNewUserRole('customer');
-      toast({ title: 'Success', description: 'New user has been created.' });
+      toast({ title: 'Успех', description: 'Новый пользователь создан.' });
   }
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
+      <h1 className="text-3xl font-bold mb-6">Панель администратора</h1>
       <Tabs defaultValue="orders" className="w-full">
         <TabsList className="inline-flex h-auto rounded-lg bg-muted p-1 text-muted-foreground">
-          <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-          <TabsTrigger value="orders">All Orders</TabsTrigger>
-          <TabsTrigger value="users">Users</TabsTrigger>
-          <TabsTrigger value="pricing">Pricing</TabsTrigger>
+          <TabsTrigger value="dashboard">Дашборд</TabsTrigger>
+          <TabsTrigger value="orders">Все заказы</TabsTrigger>
+          <TabsTrigger value="users">Пользователи</TabsTrigger>
+          <TabsTrigger value="pricing">Ценообразование</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 mt-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+                <CardTitle className="text-sm font-medium">Общий доход</CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{totalRevenue} TL</div>
-                <p className="text-xs text-muted-foreground">From delivered orders</p>
+                <p className="text-xs text-muted-foreground">С доставленных заказов</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+                <CardTitle className="text-sm font-medium">Всего заказов</CardTitle>
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">+{totalOrders}</div>
-                <p className="text-xs text-muted-foreground">All time</p>
+                <p className="text-xs text-muted-foreground">За все время</p>
               </CardContent>
             </Card>
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Ongoing Deliveries</CardTitle>
+                <CardTitle className="text-sm font-medium">Текущие доставки</CardTitle>
                 <Truck className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{ongoingOrders}</div>
-                <p className="text-xs text-muted-foreground">Currently active</p>
+                <p className="text-xs text-muted-foreground">Активные в данный момент</p>
               </CardContent>
             </Card>
           </div>
@@ -139,18 +139,18 @@ export default function AdminDashboard() {
         <TabsContent value="orders">
             <Card className="mt-4">
                 <CardHeader>
-                    <CardTitle>All Orders</CardTitle>
-                    <CardDescription>A list of all orders in the system.</CardDescription>
+                    <CardTitle>Все заказы</CardTitle>
+                    <CardDescription>Список всех заказов в системе.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Order ID</TableHead>
-                                <TableHead>Customer</TableHead>
-                                <TableHead>Courier</TableHead>
-                                <TableHead>Price</TableHead>
-                                <TableHead>Status</TableHead>
+                                <TableHead>ID Заказа</TableHead>
+                                <TableHead>Клиент</TableHead>
+                                <TableHead>Курьер</TableHead>
+                                <TableHead>Цена</TableHead>
+                                <TableHead>Статус</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -174,40 +174,40 @@ export default function AdminDashboard() {
         <TabsContent value="users">
             <Card className="mt-4">
                 <CardHeader>
-                    <CardTitle>User Management</CardTitle>
-                    <CardDescription>Manage your customers and couriers.</CardDescription>
+                    <CardTitle>Управление пользователями</CardTitle>
+                    <CardDescription>Управляйте вашими клиентами и курьерами.</CardDescription>
                 </CardHeader>
                 <CardContent>
                      <AlertDialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
                         <AlertDialogTrigger asChild>
-                            <Button>Add New User</Button>
+                            <Button>Добавить нового пользователя</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                            <AlertDialogTitle>Add New User</AlertDialogTitle>
+                            <AlertDialogTitle>Добавить нового пользователя</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Fill in the details for the new user.
+                                Заполните данные для нового пользователя.
                             </AlertDialogDescription>
                             </AlertDialogHeader>
                             <div className="space-y-4 py-4">
                                <div className="space-y-2">
-                                    <Label htmlFor="hwid">Device HWID</Label>
-                                    <Input id="hwid" placeholder="Paste HWID from WhatsApp" value={newUserHwid} onChange={e => setNewUserHwid(e.target.value)} />
+                                    <Label htmlFor="hwid">HWID Устройства</Label>
+                                    <Input id="hwid" placeholder="Вставьте HWID из WhatsApp" value={newUserHwid} onChange={e => setNewUserHwid(e.target.value)} />
                                </div>
                                <div className="space-y-2">
-                                    <Label htmlFor="username">Username</Label>
-                                    <Input id="username" placeholder="e.g. John Doe" value={newUserName} onChange={e => setNewUserName(e.target.value)} />
+                                    <Label htmlFor="username">Имя пользователя</Label>
+                                    <Input id="username" placeholder="например, Иван Иванов" value={newUserName} onChange={e => setNewUserName(e.target.value)} />
                                </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="role">Role</Label>
+                                    <Label htmlFor="role">Роль</Label>
                                     <Select value={newUserRole} onValueChange={(value: Role) => setNewUserRole(value)}>
                                         <SelectTrigger>
-                                            <SelectValue placeholder="Select a role" />
+                                            <SelectValue placeholder="Выберите роль" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="customer">Customer</SelectItem>
-                                            <SelectItem value="courier">Courier</SelectItem>
-                                            <SelectItem value="admin">Admin</SelectItem>
+                                            <SelectItem value="customer">Клиент</SelectItem>
+                                            <SelectItem value="courier">Курьер</SelectItem>
+                                            <SelectItem value="admin">Администратор</SelectItem>
                                         </SelectContent>
                                     </Select>
                                </div>
@@ -217,16 +217,16 @@ export default function AdminDashboard() {
                                     setNewUserHwid('');
                                     setNewUserName('');
                                     setNewUserRole('customer');
-                                }}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={handleAddUser}>Create User</AlertDialogAction>
+                                }}>Отмена</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleAddUser}>Создать пользователя</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                     <Table className="mt-4">
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Username</TableHead>
-                                <TableHead>Role</TableHead>
+                                <TableHead>Имя пользователя</TableHead>
+                                <TableHead>Роль</TableHead>
                                 <TableHead>HWID</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -247,33 +247,33 @@ export default function AdminDashboard() {
         <TabsContent value="pricing">
             <Card className="mt-4">
                 <CardHeader>
-                    <CardTitle>Pricing Tiers</CardTitle>
-                    <CardDescription>Set the delivery prices based on distance. These prices are used by the AI to calculate quotes.</CardDescription>
+                    <CardTitle>Тарифные планы</CardTitle>
+                    <CardDescription>Установите цены на доставку в зависимости от расстояния. Эти цены используются ИИ для расчета стоимости.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <AlertDialog open={isPricingDialogOpen} onOpenChange={setIsPricingDialogOpen}>
                         <AlertDialogTrigger asChild>
-                            <Button>Edit Pricing</Button>
+                            <Button>Редактировать цены</Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                            <AlertDialogTitle>Edit Pricing Tiers</AlertDialogTitle>
+                            <AlertDialogTitle>Редактировать тарифные планы</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Changes will be reflected in new order price calculations.
+                                Изменения отразятся на расчетах цен новых заказов.
                             </AlertDialogDescription>
                             </AlertDialogHeader>
                             <div className="space-y-4 py-4">
                                 {editableTiers.map((tier, index) => (
                                     <div key={index} className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <Label>Distance Range</Label>
+                                            <Label>Диапазон расстояния</Label>
                                             <Input 
                                                 value={tier.range}
                                                 onChange={(e) => handlePriceChange(index, 'range', e.target.value)}
                                             />
                                         </div>
                                         <div>
-                                            <Label>Price (TL)</Label>
+                                            <Label>Цена (TL)</Label>
                                             <Input 
                                                 type="number"
                                                 value={tier.price}
@@ -284,16 +284,16 @@ export default function AdminDashboard() {
                                 ))}
                             </div>
                             <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleSavePricing}>Save Changes</AlertDialogAction>
+                            <AlertDialogCancel>Отмена</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleSavePricing}>Сохранить изменения</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
                     </AlertDialog>
                      <Table className="mt-4">
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Distance Range</TableHead>
-                                <TableHead>Price (TL)</TableHead>
+                                <TableHead>Диапазон расстояния</TableHead>
+                                <TableHead>Цена (TL)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>

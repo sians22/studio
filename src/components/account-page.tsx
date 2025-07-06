@@ -25,7 +25,7 @@ export default function AccountPage({ onBack, onNavigate }: AccountPageProps) {
         <Button variant="ghost" size="icon" className="absolute left-0" onClick={onBack}>
           <ArrowLeft className="h-6 w-6" />
         </Button>
-        <h1 className="text-xl font-bold">Account</h1>
+        <h1 className="text-xl font-bold">Аккаунт</h1>
       </header>
 
       <div className="p-4 pt-0">
@@ -43,7 +43,7 @@ export default function AccountPage({ onBack, onNavigate }: AccountPageProps) {
               <CardContent className="flex cursor-pointer items-center justify-between p-4">
                   <div className="flex items-center gap-4">
                       <User className="h-5 w-5 text-muted-foreground" />
-                      <span>Edit Profile</span>
+                      <span>Редактировать профиль</span>
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
@@ -52,7 +52,7 @@ export default function AccountPage({ onBack, onNavigate }: AccountPageProps) {
               <CardContent className="flex cursor-pointer items-center justify-between p-4">
                   <div className="flex items-center gap-4">
                       <MessageCircle className="h-5 w-5 text-muted-foreground" />
-                      <span>Support</span>
+                      <span>Поддержка</span>
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
@@ -61,7 +61,7 @@ export default function AccountPage({ onBack, onNavigate }: AccountPageProps) {
               <CardContent className="flex cursor-pointer items-center justify-between p-4">
                   <div className="flex items-center gap-4">
                       <Shield className="h-5 w-5 text-muted-foreground" />
-                      <span>Security</span>
+                      <span>Безопасность</span>
                   </div>
                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
               </CardContent>
@@ -70,7 +70,7 @@ export default function AccountPage({ onBack, onNavigate }: AccountPageProps) {
 
         <Button variant="outline" className="mt-8 w-full" onClick={logout}>
           <LogOut className="mr-2 h-4 w-4" />
-          Logout (Clear Session)
+          Выйти (Очистить сессию)
         </Button>
       </div>
     </div>

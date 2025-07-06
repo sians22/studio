@@ -11,11 +11,11 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const SearchAddressInputSchema = z.object({
-  query: z.string().min(3).describe('The address query to search for.'),
+  query: z.string().min(3).describe('Адресный запрос для поиска.'),
 });
 export type SearchAddressInput = z.infer<typeof SearchAddressInputSchema>;
 
-const SearchAddressOutputSchema = z.array(z.string()).describe('A list of matching address suggestions.');
+const SearchAddressOutputSchema = z.array(z.string()).describe('Список подходящих адресных предложений.');
 export type SearchAddressOutput = z.infer<typeof SearchAddressOutputSchema>;
 
 export async function searchAddress(input: SearchAddressInput): Promise<SearchAddressOutput> {
@@ -31,13 +31,13 @@ const searchAddressFlow = ai.defineFlow(
   async ({ query }) => {
     // Using OpenStreetMap Nominatim API - free, no API key needed, but has usage policies.
     // See: https://operations.osmfoundation.org/policies/nominatim/
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=tr&limit=5&addressdetails=1`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=tr,ru&limit=5&addressdetails=1`;
     
     try {
       const response = await fetch(url, {
         headers: {
             // OSM requires a descriptive User-Agent.
-            'User-Agent': 'HizliKuryeApp/1.0 (Firebase Studio Demo; mail@example.com)'
+            'User-Agent': 'BystryiKurierApp/1.0 (Firebase Studio Demo; mail@example.com)'
         }
       });
       if (!response.ok) {

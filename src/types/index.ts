@@ -8,11 +8,11 @@ export interface User {
 }
 
 export type OrderStatus =
-  | "Pending"
-  | "Accepted"
-  | "In-transit"
-  | "Delivered"
-  | "Cancelled";
+  | "Ожидание"
+  | "Принят"
+  | "В пути"
+  | "Доставлен"
+  | "Отменен";
 
 export interface Order {
   id: string;
