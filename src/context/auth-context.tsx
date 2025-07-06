@@ -31,6 +31,7 @@ const initialUsers: User[] = [
     { id: "user-1-demo", hwid: "hwid-customer", username: "Demo Customer", role: "customer" },
     { id: "user-2-demo", hwid: "hwid-courier", username: "Demo Courier", role: "courier" },
     { id: "user-3-demo", hwid: "hwid-admin", username: "Demo Admin", role: "admin" },
+    { id: "user-4-admin", hwid: "caf87390-27d3-4e6d-9eae-b1ac4027c941", username: "Admin", role: "admin" },
 ];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
