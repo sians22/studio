@@ -145,8 +145,15 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
   const handleSuggestionClick = (suggestion: string, fieldName: 'pickupAddress' | 'dropoffAddress') => {
     const isStatusMessage = ['Поиск...', 'Ничего не найдено.', 'Ошибка поиска.'].includes(suggestion);
     if (isStatusMessage) return;
+
     setFormData(prev => ({ ...prev, [fieldName]: suggestion }));
     setSuggestions([]);
+
+    if (fieldName === 'pickupAddress') {
+        setStep('dropoff');
+    } else if (fieldName === 'dropoffAddress') {
+        setStep('senderPhone');
+    }
   };
   
   const renderAddressSuggestions = (fieldName: 'pickupAddress' | 'dropoffAddress') => {
@@ -271,10 +278,14 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
           )}
           {step === 'done' ? (
             <Button onClick={() => onOpenChange(false)} className="w-full">Закрыть</Button>
-          ) : step !== 'calculating' && (
-            <Button onClick={handleNext} disabled={isNextDisabled()}>
+          ) : (
+            step !== 'calculating' &&
+            step !== 'pickup' &&
+            step !== 'dropoff' && (
+              <Button onClick={handleNext} disabled={isNextDisabled()}>
                 {step === 'confirming' ? 'Подтвердить заказ' : step === 'description' ? 'Рассчитать стоимость' : 'Далее'}
-            </Button>
+              </Button>
+            )
           )}
         </DialogFooter>
       </DialogContent>
