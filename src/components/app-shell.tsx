@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList, Heart, Send } from "lucide-react";
+import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList, Heart, Send, PlusCircle } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/icons";
 import CustomerDashboard from "@/components/customer/customer-dashboard";
@@ -18,6 +18,8 @@ export default function AppShell() {
   // For customer, 'home' shows orders, 'create' shows form
   // For others, 'home' is the main view.
   const [activeTab, setActiveTab] = useState("home");
+  
+  const showMainHeader = !['support', 'account', 'browse'].includes(activeTab);
 
   const renderContent = () => {
     if (activeTab === 'support') {
@@ -47,7 +49,7 @@ export default function AppShell() {
       case "customer":
         return [
           { id: "home", label: "Главная", icon: Home, action: () => setActiveTab("home") },
-          { id: "create", label: "Заказы", icon: ClipboardList, action: () => setActiveTab("create") },
+          { id: "create", label: "Создать", icon: PlusCircle, action: () => setActiveTab("create") },
           { id: "browse", label: "Обзор", icon: Search, action: () => setActiveTab("browse") },
           { id: "account", label: "Аккаунт", icon: User, action: () => setActiveTab("account") },
         ];
@@ -71,14 +73,16 @@ export default function AppShell() {
 
   return (
     <div className="flex h-screen flex-col">
-      <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-4 py-2 shadow-sm">
-        <Logo />
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon"><Heart className="h-6 w-6" /></Button>
-          <Button variant="ghost" size="icon"><Send className="h-6 w-6" /></Button>
-          <ThemeSwitcher />
-        </div>
-      </header>
+      {showMainHeader && (
+        <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-4 py-2 shadow-sm">
+          <Logo />
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon"><Heart className="h-6 w-6" /></Button>
+            <Button variant="ghost" size="icon"><Send className="h-6 w-6" /></Button>
+            <ThemeSwitcher />
+          </div>
+        </header>
+      )}
       
       <main className="flex-1 overflow-y-auto bg-background pb-20">
         {renderContent()}
@@ -94,7 +98,8 @@ export default function AppShell() {
               className={`flex flex-col items-center justify-center gap-1 p-2 transition-colors
                 ${activeTab === item.id ? "text-primary" : "text-foreground/70 hover:text-foreground"}`}
             >
-              <item.icon className="h-7 w-7" />
+              <item.icon className="h-6 w-6" />
+              <span className="text-xs">{item.label}</span>
             </button>
           ))}
         </div>
