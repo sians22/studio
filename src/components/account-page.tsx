@@ -70,7 +70,7 @@ export default function AccountPage({ onBack, onNavigate }: AccountPageProps) {
 
         <Button variant="outline" className="mt-8 w-full" onClick={logout}>
           <LogOut className="mr-2 h-4 w-4" />
-          Logout
+          Logout (Clear Session)
         </Button>
       </div>
     </div>

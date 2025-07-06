@@ -1,8 +1,5 @@
 "use client";
 
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import * as z from "zod";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import {
@@ -12,44 +9,18 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
 import { Logo } from "./icons";
-import type { Role } from "@/types";
-import { Rocket } from "lucide-react";
-
-const formSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-});
+import { MessageCircle, Terminal } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 
 export default function LoginPage() {
-  const { login } = useAuth();
-
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      username: "",
-    },
-  });
-
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    const username = values.username.toLowerCase().trim();
-    if (["customer", "courier", "admin"].includes(username)) {
-      login(username, username as Role);
-    } else {
-      form.setError("username", {
-        type: "manual",
-        message: "Please enter 'customer', 'courier', or 'admin'.",
-      });
-    }
+  const { hwid } = useAuth();
+  
+  const handleRegister = () => {
+      if(!hwid) return;
+      const message = `Merhaba, yeni kullanıcı kaydı yapmak istiyorum. Cihaz Kimliğim: ${hwid}`;
+      const whatsappUrl = `https://wa.me/905555555555?text=${encodeURIComponent(message)}`;
+      window.open(whatsappUrl, '_blank');
   }
 
   return (
@@ -59,36 +30,37 @@ export default function LoginPage() {
           <div className="mx-auto mb-4">
             <Logo />
           </div>
-          <CardTitle>Welcome!</CardTitle>
+          <CardTitle>Cihazınız Kayıtlı Değil</CardTitle>
           <CardDescription>
-            Enter a role to log in as a demo user.
+            Uygulamayı kullanabilmek için lütfen cihazınızı kaydedin.
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. customer" {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Type <strong>customer</strong>, <strong>courier</strong>, or <strong>admin</strong> to log in.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
-                <Rocket className="mr-2 h-4 w-4" />
-                Login
-              </Button>
-            </form>
-          </Form>
+        <CardContent className="space-y-6">
+           <Alert>
+              <Terminal className="h-4 w-4" />
+              <AlertTitle>Cihaz Kimliğiniz</AlertTitle>
+              <AlertDescription className="break-all font-mono text-xs">
+                {hwid || 'Kimlik üretiliyor...'}
+              </AlertDescription>
+            </Alert>
+          
+          <p className="text-sm text-muted-foreground">
+            Aşağıdaki butona tıklayarak cihaz kimliğinizi yöneticiye iletin. Onaylandıktan sonra uygulamaya erişebileceksiniz.
+          </p>
+
+          <Button onClick={handleRegister} className="w-full bg-green-600 hover:bg-green-700 text-white">
+            <MessageCircle className="mr-2 h-4 w-4" />
+            WhatsApp ile Kayıt Ol
+          </Button>
+
+           <CardDescription className="text-center !mt-8">
+            <span className="font-bold">Test için:</span> Demo hesaplardan birini kullanmak için, yönetici panelinden aşağıdaki HWID'lerden birini ekleyin:
+            <ul className="text-left text-xs list-disc pl-5 mt-2 space-y-1">
+              <li><strong className="font-mono">hwid-customer</strong> (Müşteri)</li>
+              <li><strong className="font-mono">hwid-courier</strong> (Kurye)</li>
+              <li><strong className="font-mono">hwid-admin</strong> (Admin)</li>
+            </ul>
+          </CardDescription>
         </CardContent>
       </Card>
     </div>

@@ -8,30 +8,31 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DollarSign, Package, Users, Truck } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import type { Order } from "@/types";
+import type { Order, Role } from "@/types";
 import { usePricing } from '@/context/pricing-context';
 import type { PricingTier } from '@/context/pricing-context';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useToast } from '@/hooks/use-toast';
-
-const mockUsers = [
-    { id: 'user-1', name: 'customer', role: 'Customer', orders: 5 },
-    { id: 'user-2', name: 'courier', role: 'Courier', deliveries: 12 },
-    { id: 'user-3', name: 'admin', role: 'Admin', orders: 0 },
-    { id: 'user-4', name: 'Jane Doe', role: 'Customer', orders: 2 },
-    { id: 'user-5', name: 'Mike Ross', role: 'Courier', deliveries: 8 },
-];
-
+import { useAuth } from '@/context/auth-context';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 
 export default function AdminDashboard() {
   const { orders } = useOrders();
   const { tiers, setTiers } = usePricing();
+  const { users, addUser } = useAuth();
   const { toast } = useToast();
+  
   const [isPricingDialogOpen, setIsPricingDialogOpen] = useState(false);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  
   const [editableTiers, setEditableTiers] = useState<PricingTier[]>(tiers);
+
+  const [newUserHwid, setNewUserHwid] = useState('');
+  const [newUserName, setNewUserName] = useState('');
+  const [newUserRole, setNewUserRole] = useState<Role>('customer');
+
 
   const totalRevenue = orders
     .filter(o => o.status === 'Delivered')
@@ -67,8 +68,26 @@ export default function AdminDashboard() {
   }
 
   const handleAddUser = () => {
+      if (!newUserHwid || !newUserName) {
+          toast({ variant: 'destructive', title: 'Error', description: 'HWID and Username are required.' });
+          return;
+      }
+      if (users.some(u => u.hwid === newUserHwid)) {
+         toast({ variant: 'destructive', title: 'Error', description: 'This HWID is already registered.' });
+         return;
+      }
+      
+      addUser({
+          hwid: newUserHwid.trim(),
+          username: newUserName.trim(),
+          role: newUserRole,
+      });
+
       setIsUserDialogOpen(false);
-      toast({ title: 'Success (Simulation)', description: 'New user has been created.' });
+      setNewUserHwid('');
+      setNewUserName('');
+      setNewUserRole('customer');
+      toast({ title: 'Success', description: 'New user has been created.' });
   }
 
   return (
@@ -167,25 +186,38 @@ export default function AdminDashboard() {
                             <AlertDialogHeader>
                             <AlertDialogTitle>Add New User</AlertDialogTitle>
                             <AlertDialogDescription>
-                                Create a new user account. This is a simulation.
+                                Fill in the details for the new user.
                             </AlertDialogDescription>
                             </AlertDialogHeader>
                             <div className="space-y-4 py-4">
                                <div className="space-y-2">
-                                    <Label htmlFor="username">Username</Label>
-                                    <Input id="username" placeholder="e.g. john_doe" />
+                                    <Label htmlFor="hwid">Device HWID</Label>
+                                    <Input id="hwid" placeholder="Paste HWID from WhatsApp" value={newUserHwid} onChange={e => setNewUserHwid(e.target.value)} />
                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="password">Password</Label>
-                                    <Input id="password" type="password" />
+                               <div className="space-y-2">
+                                    <Label htmlFor="username">Username</Label>
+                                    <Input id="username" placeholder="e.g. John Doe" value={newUserName} onChange={e => setNewUserName(e.target.value)} />
                                </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="role">Role</Label>
-                                    <Input id="role" placeholder="customer, courier, or admin" />
+                                    <Select value={newUserRole} onValueChange={(value: Role) => setNewUserRole(value)}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select a role" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="customer">Customer</SelectItem>
+                                            <SelectItem value="courier">Courier</SelectItem>
+                                            <SelectItem value="admin">Admin</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                </div>
                             </div>
                             <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel onClick={() => {
+                                    setNewUserHwid('');
+                                    setNewUserName('');
+                                    setNewUserRole('customer');
+                                }}>Cancel</AlertDialogCancel>
                                 <AlertDialogAction onClick={handleAddUser}>Create User</AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -193,19 +225,17 @@ export default function AdminDashboard() {
                     <Table className="mt-4">
                         <TableHeader>
                             <TableRow>
-                                <TableHead>User ID</TableHead>
-                                <TableHead>Name</TableHead>
+                                <TableHead>Username</TableHead>
                                 <TableHead>Role</TableHead>
-                                <TableHead>Activity</TableHead>
+                                <TableHead>HWID</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockUsers.map(user => (
+                            {users.map(user => (
                                 <TableRow key={user.id}>
-                                    <TableCell>{user.id}</TableCell>
-                                    <TableCell>{user.name}</TableCell>
+                                    <TableCell>{user.username}</TableCell>
                                     <TableCell><Badge variant="secondary">{user.role}</Badge></TableCell>
-                                    <TableCell>{user.role === 'Customer' ? `${user.orders} orders` : `${(user as any).deliveries} deliveries`}</TableCell>
+                                    <TableCell className="font-mono text-xs">{user.hwid}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
