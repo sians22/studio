@@ -10,6 +10,7 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
+import type { PricingTier } from '@/context/pricing-context';
 
 // Helper function to geocode an address using Yandex Maps API
 async function geocodeAddress(address: string): Promise<[number, number] | null> {
@@ -90,28 +91,23 @@ export async function calculateDeliveryPrice(input: CalculateDeliveryPriceInput)
   return calculateDeliveryPriceFlow(input);
 }
 
-const PricePromptInputSchema = CalculateDeliveryPriceInputSchema.extend({
-    distanceKm: z.number().describe('Точное расстояние в километрах, рассчитанное по API.'),
-});
-
-const calculateDeliveryPricePrompt = ai.definePrompt({
-  name: 'calculateDeliveryPricePrompt',
-  input: {schema: PricePromptInputSchema},
-  output: {schema: CalculateDeliveryPriceOutputSchema.omit({ routeGeometry: true })}, // AI doesn't need to know about geometry
-  prompt: `Вы — калькулятор стоимости доставки. Вам дано точное расстояние в километрах. Ваша задача — рассчитать стоимость доставки на основе предоставленных тарифных планов и вернуть подробное объяснение.
-
-Адрес отправления: {{{pickupAddress}}}
-Адрес доставки: {{{dropoffAddress}}}
-Точное расстояние: {{{distanceKm}}} км
-
-Используйте эти тарифные планы для расчета:
-{{#each pricingTiers}}
-- {{this.range}}: {{this.price}} руб.
-{{/each}}
-
-Верните расстояние (используйте предоставленное значение distanceKm), рассчитанную цену в рублях и краткое объяснение деталей ценообразования.
-`,
-});
+/**
+ * Parses a range string like "0-3 km" or "10+ km" into a [min, max] tuple.
+ * @param rangeStr The string to parse.
+ * @returns A tuple [min, max].
+ */
+function parseRange(rangeStr: string): [number, number] {
+    const cleaned = rangeStr.replace(/km|\s/g, '');
+    if (cleaned.includes('+')) {
+        return [parseFloat(cleaned.replace('+', '')), Infinity];
+    }
+    if (cleaned.includes('-')) {
+        const parts = cleaned.split('-');
+        return [parseFloat(parts[0]), parseFloat(parts[1])];
+    }
+    const num = parseFloat(cleaned);
+    return [num, num];
+}
 
 const calculateDeliveryPriceFlow = ai.defineFlow(
   {
@@ -136,16 +132,33 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
     const distanceKm = parseFloat(routeInfo.distance.toFixed(2));
     const routeGeometry = routeInfo.geometry;
 
-    const promptInput = { ...input, distanceKm };
-    const {output} = await calculateDeliveryPricePrompt(promptInput);
-    
-    if (!output) {
-        throw new Error('Не удалось получить ответ от модели ИИ.');
+    // --- Price calculation logic without Gemini ---
+    let calculatedPrice = 0;
+    let matchedTier: PricingTier | null = null;
+
+    const sortedTiers = [...input.pricingTiers].sort((a, b) => parseRange(a.range)[0] - parseRange(b.range)[0]);
+
+    for (const tier of sortedTiers) {
+        const [min, max] = parseRange(tier.range);
+        if (distanceKm >= min && distanceKm <= max) {
+            calculatedPrice = tier.price;
+            matchedTier = tier;
+            break;
+        }
     }
     
+    let pricingDetails = '';
+    if (matchedTier) {
+        pricingDetails = `Расстояние ${distanceKm} км соответствует тарифу "${matchedTier.range}", поэтому стоимость составляет ${calculatedPrice} руб.`;
+    } else {
+        pricingDetails = 'Для данного расстояния не найден подходящий тариф.';
+    }
+    // --- End of price calculation logic ---
+    
     return {
-        ...output,
         distanceKm: distanceKm,
+        priceTl: calculatedPrice,
+        pricingDetails: pricingDetails,
         routeGeometry: routeGeometry,
     };
   }
