@@ -1,0 +1,26 @@
+export type Role = "customer" | "courier" | "admin";
+
+export interface User {
+  id: string;
+  username: string;
+  role: Role;
+}
+
+export type OrderStatus =
+  | "Pending"
+  | "Accepted"
+  | "In-transit"
+  | "Delivered"
+  | "Cancelled";
+
+export interface Order {
+  id: string;
+  customerId: string;
+  courierId?: string;
+  pickupAddress: string;
+  dropoffAddress: string;
+  status: OrderStatus;
+  price: number;
+  distance: number;
+  createdAt: number;
+}
