@@ -15,7 +15,12 @@ const SearchAddressInputSchema = z.object({
 });
 export type SearchAddressInput = z.infer<typeof SearchAddressInputSchema>;
 
-const SearchAddressOutputSchema = z.array(z.string()).describe('Список подходящих адресных предложений.');
+const AddressSuggestionSchema = z.object({
+    address: z.string().describe('Полный текст адреса.'),
+    coords: z.array(z.number()).length(2).describe('Координаты адреса [широта, долгота].')
+});
+
+const SearchAddressOutputSchema = z.array(AddressSuggestionSchema).describe('Список подходящих адресных предложений.');
 export type SearchAddressOutput = z.infer<typeof SearchAddressOutputSchema>;
 
 export async function searchAddress(input: SearchAddressInput): Promise<SearchAddressOutput> {
@@ -32,7 +37,7 @@ const searchAddressFlow = ai.defineFlow(
     const apiKey = process.env.YANDEX_API_KEY;
     if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
         console.error("Yandex API key is not set or is a placeholder in the .env file.");
-        return ['Ошибка: Ключ API Яндекс не настроен.'];
+        return [];
     }
 
     // Bounding box for Chechen Republic: [lon,lat~lon,lat] -> [44.5,42.4~46.8,44.0]
@@ -53,8 +58,18 @@ const searchAddressFlow = ai.defineFlow(
 
       if (Array.isArray(featureMembers)) {
         return featureMembers
-          .map((item: any) => item.GeoObject?.metaDataProperty?.GeocoderMetaData?.text)
-          .filter(Boolean);
+          .map((item: any) => {
+            const geoObject = item.GeoObject;
+            if (!geoObject) return null;
+            
+            const address = geoObject.metaDataProperty?.GeocoderMetaData?.text;
+            const pos = geoObject.Point?.pos;
+            if (!address || !pos) return null;
+            
+            const [lon, lat] = pos.split(' ').map(Number);
+            return { address, coords: [lat, lon] };
+          })
+          .filter(Boolean) as SearchAddressOutput;
       }
       
       return [];

@@ -26,7 +26,7 @@ async function geocodeAddress(address: string): Promise<[number, number] | null>
         const pos = data.response?.GeoObjectCollection?.featureMember[0]?.GeoObject?.Point?.pos;
         if (pos) {
             const [lon, lat] = pos.split(' ').map(Number);
-            return [lon, lat];
+            return [lat, lon]; // Return as [lat, lon]
         }
         return null;
     } catch (error) {
@@ -36,21 +36,30 @@ async function geocodeAddress(address: string): Promise<[number, number] | null>
 }
 
 // Helper function to get route distance from Yandex Maps Directions API
-async function getRouteDistance(startCoords: [number, number], endCoords: [number, number]): Promise<number | null> {
+async function getRoute(startCoords: [number, number], endCoords: [number, number]): Promise<{ distance: number; geometry: number[][] } | null> {
     const apiKey = process.env.YANDEX_API_KEY;
      if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
         console.error("Yandex API key is not set or is a placeholder in the .env file.");
         throw new Error("Ключ API Яндекс не настроен. Пожалуйста, получите ключ и добавьте его в файл .env.");
     }
-    // Yandex Directions API expects lat,lon format for waypoints
+    // Yandex Directions API expects lon,lat format for waypoints
     const waypoints = `${startCoords[1]},${startCoords[0]}|${endCoords[1]},${endCoords[0]}`;
     const url = `https://api.routing.yandex.net/v2/route?apikey=${apiKey}&waypoints=${waypoints}&mode=driving`;
      try {
         const response = await fetch(url);
         if (!response.ok) return null;
         const data = await response.json();
-        const distanceMeters = data.routes?.[0]?.summary?.distance?.value;
-        return distanceMeters ? distanceMeters / 1000 : null; // Convert meters to km
+
+        const route = data.routes?.[0];
+        if (!route) return null;
+        
+        const distanceMeters = route.summary?.distance?.value;
+        const geometry = route.geometry.map((point: [number, number]) => [point[1], point[0]]); // Swap to lat,lon
+
+        return {
+          distance: distanceMeters ? distanceMeters / 1000 : 0, // Convert meters to km
+          geometry,
+        };
     } catch (error) {
         console.error("Routing error:", error);
         return null;
@@ -73,6 +82,7 @@ const CalculateDeliveryPriceOutputSchema = z.object({
   distanceKm: z.number().describe('Расстояние между точками отправления и доставки в километрах.'),
   priceTl: z.number().describe('Рассчитанная стоимость доставки в рублях.'),
   pricingDetails: z.string().describe('Подробности о том, как была рассчитана цена на основе тарифных планов.'),
+  routeGeometry: z.array(z.array(z.number())).describe('Геометрия маршрута для отрисовки на карте.'),
 });
 export type CalculateDeliveryPriceOutput = z.infer<typeof CalculateDeliveryPriceOutputSchema>;
 
@@ -80,7 +90,6 @@ export async function calculateDeliveryPrice(input: CalculateDeliveryPriceInput)
   return calculateDeliveryPriceFlow(input);
 }
 
-// The prompt input now includes the pre-calculated distance
 const PricePromptInputSchema = CalculateDeliveryPriceInputSchema.extend({
     distanceKm: z.number().describe('Точное расстояние в километрах, рассчитанное по API.'),
 });
@@ -88,7 +97,7 @@ const PricePromptInputSchema = CalculateDeliveryPriceInputSchema.extend({
 const calculateDeliveryPricePrompt = ai.definePrompt({
   name: 'calculateDeliveryPricePrompt',
   input: {schema: PricePromptInputSchema},
-  output: {schema: CalculateDeliveryPriceOutputSchema},
+  output: {schema: CalculateDeliveryPriceOutputSchema.omit({ routeGeometry: true })}, // AI doesn't need to know about geometry
   prompt: `Вы — калькулятор стоимости доставки. Вам дано точное расстояние в километрах. Ваша задача — рассчитать стоимость доставки на основе предоставленных тарифных планов и вернуть подробное объяснение.
 
 Адрес отправления: {{{pickupAddress}}}
@@ -111,7 +120,6 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
     outputSchema: CalculateDeliveryPriceOutputSchema,
   },
   async input => {
-    // 1. Geocode both addresses
     const pickupCoords = await geocodeAddress(input.pickupAddress);
     const dropoffCoords = await geocodeAddress(input.dropoffAddress);
 
@@ -119,25 +127,26 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
         throw new Error('Не удалось геокодировать один или оба адреса.');
     }
 
-    // 2. Get route distance
-    const distanceKm = await getRouteDistance(pickupCoords, dropoffCoords);
+    const routeInfo = await getRoute(pickupCoords, dropoffCoords);
     
-    if (distanceKm === null) {
+    if (routeInfo === null) {
         throw new Error('Не удалось рассчитать расстояние маршрута.');
     }
+    
+    const distanceKm = parseFloat(routeInfo.distance.toFixed(2));
+    const routeGeometry = routeInfo.geometry;
 
-    // 3. Call the LLM with the calculated distance
-    const promptInput = { ...input, distanceKm: parseFloat(distanceKm.toFixed(2)) };
+    const promptInput = { ...input, distanceKm };
     const {output} = await calculateDeliveryPricePrompt(promptInput);
     
     if (!output) {
         throw new Error('Не удалось получить ответ от модели ИИ.');
     }
     
-    // Ensure the output from the model respects the calculated distance
     return {
         ...output,
-        distanceKm: promptInput.distanceKm,
+        distanceKm: distanceKm,
+        routeGeometry: routeGeometry,
     };
   }
 );
