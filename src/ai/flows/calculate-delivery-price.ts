@@ -9,14 +9,14 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 
 // Helper function to geocode an address using Yandex Maps API
 async function geocodeAddress(address: string): Promise<[number, number] | null> {
     const apiKey = process.env.YANDEX_API_KEY;
     if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
-        console.error("Yandex API key is not set in .env file.");
-        throw new Error("Ключ API Яндекс не настроен.");
+        console.error("Yandex API key is not set or is a placeholder in the .env file.");
+        throw new Error("Ключ API Яндекс не настроен. Пожалуйста, получите ключ и добавьте его в файл .env.");
     }
     const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${encodeURIComponent(address)}&format=json&lang=ru_RU&results=1`;
     try {
@@ -39,8 +39,8 @@ async function geocodeAddress(address: string): Promise<[number, number] | null>
 async function getRouteDistance(startCoords: [number, number], endCoords: [number, number]): Promise<number | null> {
     const apiKey = process.env.YANDEX_API_KEY;
      if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
-        console.error("Yandex API key is not set in .env file.");
-        throw new Error("Ключ API Яндекс не настроен.");
+        console.error("Yandex API key is not set or is a placeholder in the .env file.");
+        throw new Error("Ключ API Яндекс не настроен. Пожалуйста, получите ключ и добавьте его в файл .env.");
     }
     // Yandex Directions API expects lat,lon format for waypoints
     const waypoints = `${startCoords[1]},${startCoords[0]}|${endCoords[1]},${endCoords[0]}`;
