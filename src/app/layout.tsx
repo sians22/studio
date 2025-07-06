@@ -3,6 +3,7 @@ import './globals.css';
 import {Toaster} from '@/components/ui/toaster';
 import {AuthProvider} from '@/context/auth-context';
 import {OrderProvider} from '@/context/order-context';
+import {ThemeProvider} from '@/context/theme-context';
 
 export const metadata: Metadata = {
   title: 'Hızlı Kurye',
@@ -23,12 +24,14 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-body antialiased">
-        <AuthProvider>
-          <OrderProvider>
-            {children}
-            <Toaster />
-          </OrderProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <OrderProvider>
+              {children}
+              <Toaster />
+            </OrderProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
