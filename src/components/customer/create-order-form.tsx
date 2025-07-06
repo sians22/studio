@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -29,7 +29,9 @@ import { useAuth } from '@/context/auth-context';
 import { usePricing } from '@/context/pricing-context';
 import { calculateDeliveryPrice } from '@/ai/flows/calculate-delivery-price';
 import type { CalculateDeliveryPriceOutput } from '@/ai/flows/calculate-delivery-price';
+import { searchAddress } from '@/ai/flows/search-address';
 import { Loader2, Rocket, MapPin, Wallet, Phone, MessageSquareText } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   pickupAddress: z.string().min(10, 'Please enter a valid pickup address.'),
@@ -38,24 +40,6 @@ const formSchema = z.object({
   receiverPhone: z.string().min(10, 'Please enter a valid phone number.'),
   description: z.string().max(200, "Description can't be more than 200 characters.").optional(),
 });
-
-const allAddresses = [
-    'Istiklal Avenue, Beyoglu, Istanbul, Turkey',
-    'Sultanahmet Square, Fatih, Istanbul, Turkey',
-    'Kadikoy Ferry Terminal, Kadikoy, Istanbul, Turkey',
-    'Bagdat Avenue, Kadikoy, Istanbul, Turkey',
-    'Besiktas Square, Besiktas, Istanbul, Turkey',
-    'Ortakoy Mosque, Besiktas, Istanbul, Turkey',
-    'Galata Tower, Beyoglu, Istanbul, Turkey',
-    'Nisantasi, Sisli, Istanbul, Turkey',
-    'Levent, Besiktas, Istanbul, Turkey',
-    'Maslak, Sariyer, Istanbul, Turkey',
-    'Uskudar Square, Uskudar, Istanbul, Turkey',
-    'Cihangir, Beyoglu, Istanbul, Turkey',
-    'Bebek, Besiktas, Istanbul, Turkey',
-    'Eminonu Square, Fatih, Istanbul, Turkey',
-    'Grand Bazaar, Fatih, Istanbul, Turkey',
-];
 
 type CreateOrderFormProps = {
   onOrderCreated: () => void;
@@ -71,6 +55,8 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
   
   const [pickupSuggestions, setPickupSuggestions] = useState<string[]>([]);
   const [dropoffSuggestions, setDropoffSuggestions] = useState<string[]>([]);
+  const [isSearching, setIsSearching] = useState< 'pickup' | 'dropoff' | null>(null);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -85,20 +71,38 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
   });
   
   const handleAddressChange = (value: string, fieldName: 'pickupAddress' | 'dropoffAddress') => {
-    form.setValue(fieldName, value);
+    form.setValue(fieldName, value, { shouldValidate: false });
     const setter = fieldName === 'pickupAddress' ? setPickupSuggestions : setDropoffSuggestions;
 
-    if (value.length > 2) {
-        const filtered = allAddresses.filter(addr => 
-            addr.toLowerCase().includes(value.toLowerCase()) && addr.toLowerCase() !== value.toLowerCase()
-        );
-        setter(filtered);
-    } else {
-        setter([]);
+    if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
     }
+
+    if (value.length < 3) {
+        setter([]);
+        return;
+    }
+    
+    setIsSearching(fieldName);
+    setter(['Searching...']);
+
+    debounceTimeout.current = setTimeout(async () => {
+        try {
+            const results = await searchAddress({ query: value });
+            setter(results.length > 0 ? results : ['No results found.']);
+        } catch (error) {
+            console.error("Error searching address:", error);
+            setter(['Error searching.']);
+        } finally {
+            setIsSearching(null);
+        }
+    }, 500); // 500ms debounce
   };
 
   const handleSuggestionClick = (suggestion: string, fieldName: 'pickupAddress' | 'dropoffAddress') => {
+      const isStatusMessage = ['Searching...', 'No results found.', 'Error searching.'].includes(suggestion);
+      if (isStatusMessage) return;
+
       form.setValue(fieldName, suggestion, { shouldValidate: true });
       if (fieldName === 'pickupAddress') {
         setPickupSuggestions([]);
@@ -147,6 +151,33 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
     }
   }
 
+  const renderSuggestions = (suggestions: string[], fieldName: 'pickupAddress' | 'dropoffAddress') => {
+      if (suggestions.length === 0) return null;
+      
+      const isLoading = isSearching === fieldName;
+
+      return (
+        <div className="absolute z-10 w-full mt-1 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
+            {suggestions.map((s, i) => {
+                const isStatusMessage = ['Searching...', 'No results found.', 'Error searching.'].includes(s);
+                return (
+                    <div 
+                        key={`${s}-${i}`} 
+                        onMouseDown={() => handleSuggestionClick(s, fieldName)} 
+                        className={cn(
+                          "p-2 text-sm flex items-center gap-2",
+                          isStatusMessage ? 'text-muted-foreground' : 'cursor-pointer hover:bg-muted'
+                        )}
+                    >
+                        {isLoading && s === 'Searching...' && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {s}
+                    </div>
+                );
+            })}
+        </div>
+      )
+  }
+
   return (
     <div className="container mx-auto max-w-2xl p-4">
       <Card>
@@ -167,30 +198,20 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                   control={form.control}
                   name="pickupAddress"
                   render={({ field }) => (
-                    <FormItem className="relative">
+                    <FormItem>
                       <FormLabel>Pickup Address</FormLabel>
-                      <FormControl>
-                        <Input 
-                            placeholder="e.g., Istiklal Avenue, Beyoglu, Istanbul" 
-                            {...field}
-                            onChange={e => handleAddressChange(e.target.value, 'pickupAddress')}
-                            onBlur={() => setTimeout(() => setPickupSuggestions([]), 150)}
-                            autoComplete="off"
-                        />
-                      </FormControl>
-                      {pickupSuggestions.length > 0 && (
-                          <div className="absolute z-10 w-full mt-1 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                              {pickupSuggestions.map((s, i) => (
-                                  <div 
-                                      key={`${s}-${i}`} 
-                                      onMouseDown={() => handleSuggestionClick(s, 'pickupAddress')} 
-                                      className="p-2 text-sm hover:bg-muted cursor-pointer"
-                                  >
-                                      {s}
-                                  </div>
-                              ))}
-                          </div>
-                      )}
+                      <div className="relative">
+                        <FormControl>
+                          <Input 
+                              placeholder="e.g., Istiklal Avenue, Beyoglu, Istanbul" 
+                              {...field}
+                              onChange={e => handleAddressChange(e.target.value, 'pickupAddress')}
+                              onBlur={() => setTimeout(() => setPickupSuggestions([]), 150)}
+                              autoComplete="off"
+                          />
+                        </FormControl>
+                        {renderSuggestions(pickupSuggestions, 'pickupAddress')}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -199,30 +220,20 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                   control={form.control}
                   name="dropoffAddress"
                   render={({ field }) => (
-                     <FormItem className="relative">
+                     <FormItem>
                       <FormLabel>Drop-off Address</FormLabel>
-                      <FormControl>
-                        <Input 
-                            placeholder="e.g., Sultanahmet Square, Fatih, Istanbul" 
-                            {...field}
-                            onChange={e => handleAddressChange(e.target.value, 'dropoffAddress')}
-                            onBlur={() => setTimeout(() => setDropoffSuggestions([]), 150)}
-                            autoComplete="off"
-                        />
-                      </FormControl>
-                       {dropoffSuggestions.length > 0 && (
-                          <div className="absolute z-10 w-full mt-1 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                              {dropoffSuggestions.map((s, i) => (
-                                  <div 
-                                      key={`${s}-${i}`}
-                                      onMouseDown={() => handleSuggestionClick(s, 'dropoffAddress')} 
-                                      className="p-2 text-sm hover:bg-muted cursor-pointer"
-                                  >
-                                      {s}
-                                  </div>
-                              ))}
-                          </div>
-                      )}
+                       <div className="relative">
+                        <FormControl>
+                          <Input 
+                              placeholder="e.g., Sultanahmet Square, Fatih, Istanbul" 
+                              {...field}
+                              onChange={e => handleAddressChange(e.target.value, 'dropoffAddress')}
+                              onBlur={() => setTimeout(() => setDropoffSuggestions([]), 150)}
+                              autoComplete="off"
+                          />
+                        </FormControl>
+                         {renderSuggestions(dropoffSuggestions, 'dropoffAddress')}
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
