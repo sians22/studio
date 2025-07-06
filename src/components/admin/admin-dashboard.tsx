@@ -1,12 +1,10 @@
 "use client";
 
 import { useOrders } from "@/context/order-context";
-import { useTheme } from "@/context/theme-context";
-import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign, Package, Users, Truck, CheckCircle } from "lucide-react";
+import { DollarSign, Package, Users, Truck } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Order } from "@/types";
@@ -28,7 +26,6 @@ const mockPricing = [
 
 export default function AdminDashboard() {
   const { orders } = useOrders();
-  const { themes, theme, setTheme } = useTheme();
 
   const totalRevenue = orders
     .filter(o => o.status === 'Delivered')
@@ -52,12 +49,11 @@ export default function AdminDashboard() {
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
       <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="orders">All Orders</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="pricing">Pricing</TabsTrigger>
-          <TabsTrigger value="themes">Temalar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="dashboard">
@@ -188,48 +184,6 @@ export default function AdminDashboard() {
                     </Table>
                 </CardContent>
             </Card>
-        </TabsContent>
-
-        <TabsContent value="themes">
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Bir Tema Seçin</CardTitle>
-              <CardDescription>Uygulamanın görünümünü ve hissini özelleştirin.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {themes.map((t) => (
-                  <div key={t.name}>
-                    <button
-                      onClick={() => setTheme(t.name)}
-                      className={cn(
-                        "w-full rounded-lg border-2 p-1 transition-all text-left",
-                        theme === t.name ? "border-primary" : "border-transparent hover:border-border"
-                      )}
-                    >
-                      <Card className="overflow-hidden shadow-none">
-                        <CardContent className="p-4 space-y-3">
-                          <h3 className="font-semibold">{t.name}</h3>
-                          <div className="flex gap-2">
-                            <div className="h-8 w-8 rounded-full" style={{ backgroundColor: `hsl(${t.colors['--primary']})` }}></div>
-                            <div className="h-8 w-8 rounded-full" style={{ backgroundColor: `hsl(${t.colors['--accent']})` }}></div>
-                            <div className="h-8 w-8 rounded-full" style={{ backgroundColor: `hsl(${t.colors['--secondary']})` }}></div>
-                            <div className="h-8 w-8 rounded-full" style={{ backgroundColor: `hsl(${t.colors['--card']})`, border: `1px solid hsl(${t.colors['--border']})` }}></div>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </button>
-                    {theme === t.name && (
-                      <div className="mt-2 flex items-center justify-center gap-2 text-sm font-medium text-primary">
-                        <CheckCircle className="h-4 w-4" />
-                        <span>Mevcut Tema</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
       </Tabs>
     </div>

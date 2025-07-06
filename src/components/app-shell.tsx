@@ -8,6 +8,7 @@ import { Logo } from "@/components/icons";
 import CustomerDashboard from "@/components/customer/customer-dashboard";
 import CourierDashboard from "@/components/courier/courier-dashboard";
 import AdminDashboard from "@/components/admin/admin-dashboard";
+import { ThemeSwitcher } from "./theme-switcher";
 
 export default function AppShell() {
   const { user, logout } = useAuth();
@@ -61,10 +62,13 @@ export default function AppShell() {
     <div className="flex h-screen flex-col">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b bg-card px-4 py-2 shadow-sm">
         <Logo />
-        <Button variant="ghost" size="icon" onClick={logout}>
-          <LogOut className="h-5 w-5" />
-          <span className="sr-only">Logout</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          <ThemeSwitcher />
+          <Button variant="ghost" size="icon" onClick={logout}>
+            <LogOut className="h-5 w-5" />
+            <span className="sr-only">Logout</span>
+          </Button>
+        </div>
       </header>
       
       <main className="flex-1 overflow-y-auto bg-background pb-20">
