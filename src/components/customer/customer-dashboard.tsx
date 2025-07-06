@@ -65,18 +65,6 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                       <MoreHorizontal className="h-5 w-5" />
                     </Button>
                 </CardHeader>
-                
-                <CardContent className="p-0">
-                  <div className="relative aspect-square w-full">
-                    <Image
-                      src="https://placehold.co/600x600.png"
-                      data-ai-hint="courier car"
-                      alt="Изображение доставки"
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                </CardContent>
 
                 <CardFooter className="flex flex-col items-start gap-2 p-3">
                   <div className="flex w-full items-center justify-between">
