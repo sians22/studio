@@ -5,7 +5,7 @@ import { useOrders } from "@/context/order-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Clock, X, CheckCircle, Truck } from "lucide-react";
+import { Package, Clock, X, CheckCircle, Truck, Map } from "lucide-react";
 import CreateOrderForm from "./create-order-form";
 import { formatDistanceToNow } from "date-fns";
 
@@ -98,9 +98,25 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                          </Badge>
                     </div>
                 </CardHeader>
-                <CardContent className="space-y-2">
-                  <p><strong>From:</strong> {order.pickupAddress}</p>
-                  <p><strong>To:</strong> {order.dropoffAddress}</p>
+                <CardContent className="space-y-1">
+                  <div className="flex items-center justify-between">
+                      <p className="text-sm truncate"><strong>From:</strong> {order.pickupAddress}</p>
+                      <Button variant="ghost" size="icon" asChild>
+                          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.pickupAddress)}`} target="_blank" rel="noopener noreferrer">
+                              <Map className="h-5 w-5 text-primary" />
+                              <span className="sr-only">View on Map</span>
+                          </a>
+                      </Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                      <p className="text-sm truncate"><strong>To:</strong> {order.dropoffAddress}</p>
+                      <Button variant="ghost" size="icon" asChild>
+                          <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.dropoffAddress)}`} target="_blank" rel="noopener noreferrer">
+                              <Map className="h-5 w-5 text-primary" />
+                              <span className="sr-only">View on Map</span>
+                          </a>
+                      </Button>
+                  </div>
                   <p><strong>Price:</strong> {order.price} TL</p>
                 </CardContent>
                 {canCancel && (

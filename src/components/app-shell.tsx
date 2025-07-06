@@ -73,7 +73,7 @@ export default function AppShell() {
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-card md:hidden">
-        <div className="mx-auto flex max-w-md justify-around">
+        <div className="mx-auto flex h-16 max-w-md justify-around">
           {navItems.map((item) => (
              item.href ? (
                 <a
@@ -81,21 +81,20 @@ export default function AppShell() {
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={`flex flex-col items-center justify-center gap-1 p-2 text-xs w-1/4
-                    ${activeTab === item.id ? "text-primary" : "text-muted-foreground"}`}
+                  className="flex flex-col items-center justify-center gap-1 p-2 text-muted-foreground hover:text-primary"
                 >
-                  <item.icon className="h-6 w-6" />
-                  <span>{item.label}</span>
+                  <item.icon className="h-7 w-7" />
+                  <span className="sr-only">{item.label}</span>
                 </a>
               ) : (
                 <button
                   key={item.id}
                   onClick={item.action}
-                  className={`flex flex-col items-center justify-center gap-1 p-2 text-xs w-1/4
-                    ${activeTab === item.id ? "text-primary" : "text-muted-foreground"}`}
+                  className={`flex flex-col items-center justify-center gap-1 p-2
+                    ${activeTab === item.id ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
                 >
-                  <item.icon className="h-6 w-6" />
-                  <span>{item.label}</span>
+                  <item.icon className="h-7 w-7" />
+                  <span className="sr-only">{item.label}</span>
                 </button>
               )
           ))}

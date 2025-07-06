@@ -4,7 +4,7 @@ import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/order-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, Check, MapPin } from "lucide-react";
+import { Package, Check, MapPin, Map } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export default function CourierDashboard() {
@@ -43,9 +43,33 @@ export default function CourierDashboard() {
                         <CardTitle>Order #{order.id.slice(-6)}</CardTitle>
                         <CardDescription>{order.status}</CardDescription>
                     </CardHeader>
-                     <CardContent className="space-y-2">
-                        <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /> <strong>From:</strong> {order.pickupAddress}</div>
-                        <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /> <strong>To:</strong> {order.dropoffAddress}</div>
+                     <CardContent className="space-y-1">
+                        <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-sm">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                <strong>From:</strong>
+                                <span className="truncate">{order.pickupAddress}</span>
+                            </span>
+                            <Button variant="ghost" size="icon" asChild>
+                                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.pickupAddress)}`} target="_blank" rel="noopener noreferrer">
+                                    <Map className="h-5 w-5 text-primary" />
+                                    <span className="sr-only">Open in Maps</span>
+                                </a>
+                            </Button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                            <span className="flex items-center gap-2 text-sm">
+                                <MapPin className="h-4 w-4 text-muted-foreground" />
+                                <strong>To:</strong>
+                                <span className="truncate">{order.dropoffAddress}</span>
+                            </span>
+                            <Button variant="ghost" size="icon" asChild>
+                                <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.dropoffAddress)}`} target="_blank" rel="noopener noreferrer">
+                                    <Map className="h-5 w-5 text-primary" />
+                                    <span className="sr-only">Open in Maps</span>
+                                </a>
+                            </Button>
+                        </div>
                     </CardContent>
                     <CardFooter className="flex gap-2">
                         {order.status === 'Accepted' && (
