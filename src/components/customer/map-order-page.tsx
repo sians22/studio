@@ -14,11 +14,20 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowLeft, MapPin, Wallet, Phone, MessageSquareText, Rocket } from 'lucide-react';
+import { Loader2, ArrowLeft, MapPin, Wallet, Phone, MessageSquareText, Rocket, Move } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type OrderStep = 'pickup' | 'dropoff' | 'details' | 'confirm';
-type Address = { address: string; coords: [number, number] };
+type Address = { address: string; coords: [number, number]; kind?: string };
+
+const KIND_TRANSLATIONS: Record<string, string> = {
+    house: 'Здания и адреса',
+    street: 'Улицы',
+    metro: 'Станции метро',
+    district: 'Районы',
+    locality: 'Населенные пункты',
+    other: 'Другое'
+};
 
 export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () => void }) {
   const { toast } = useToast();
@@ -41,6 +50,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const [clickedCoords, setClickedCoords] = useState<[number, number] | null>(null);
 
   const mapRef = useRef<any>(null);
@@ -61,12 +71,12 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   }, [debouncedSearchQuery, toast]);
   
   const handleMapClick = async (e: any) => {
-    if (isReverseGeocoding || isLoading) return; // Prevent clicks during any loading state
+    if (isReverseGeocoding || isLoading || isDragging) return;
     const coords: [number, number] = e.get('coords');
     if (!coords) return;
 
     setIsReverseGeocoding(true);
-    setClickedCoords(coords); // Show temporary placemark
+    setClickedCoords(coords);
 
     try {
       const result = await getAddressFromCoords({ coords });
@@ -84,7 +94,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
       toast({ variant: 'destructive', title: 'Ошибка определения адреса', description: err.message });
     } finally {
       setIsReverseGeocoding(false);
-      setClickedCoords(null); // Hide temporary placemark
+      setClickedCoords(null);
     }
   };
 
@@ -109,7 +119,6 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
         pickupAddress: pickup.address,
         dropoffAddress: dropoff.address,
         pickupCoords: pickup.coords,
-        dropoffCoords: dropoff.coords,
         pricingTiers,
       });
       setPriceInfo(result);
@@ -121,7 +130,6 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
           description: error.message,
           duration: 9000,
       });
-      // Reset if calculation fails
       setDropoff(null);
       setStep('dropoff');
     } finally {
@@ -156,20 +164,31 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     onOrderCreated();
   };
 
-  const reset = () => {
-    setStep('pickup');
-    setPickup(null);
-    setDropoff(null);
+  const handleDragEnd = async (e: any, pointType: 'pickup' | 'dropoff') => {
+    setIsDragging(false);
     setPriceInfo(null);
-    setSearchQuery('');
-  };
+    const newCoords = e.get('target').geometry.getCoordinates();
+    
+    try {
+        const result = await getAddressFromCoords({ coords: newCoords });
+        if (result) {
+            if (pointType === 'pickup') {
+                setPickup(result);
+            } else {
+                setDropoff(result);
+            }
+        } else {
+            toast({ variant: 'destructive', title: 'Адрес не найден', description: 'Не удалось определить адрес для этой точки.' });
+        }
+    } catch (error: any) {
+        toast({ variant: 'destructive', title: 'Ошибка', description: error.message });
+    }
+  }
 
   const mapState = useMemo(() => {
     const boundsOptions = { checkZoomRange: true, zoomMargin: 35 };
     if (priceInfo && priceInfo.routeGeometry.length > 0) {
-      // Create a new map instance to ensure bounds are recalculated
       if (mapRef.current) {
-        // Use a timeout to allow the DOM to update
         setTimeout(() => {
             mapRef.current.setBounds(mapRef.current.geoObjects.getBounds(), boundsOptions);
         }, 100);
@@ -178,8 +197,21 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     }
     if (dropoff) return { center: dropoff.coords, zoom: 15, bounds: undefined };
     if (pickup) return { center: pickup.coords, zoom: 15, bounds: undefined };
-    return { center: [43.318, 45.698], zoom: 12, bounds: undefined }; // Grozny coordinates
+    return { center: [43.318, 45.698], zoom: 12, bounds: undefined };
   }, [pickup, dropoff, priceInfo]);
+  
+  const groupedSuggestions = useMemo(() => {
+    if (suggestions.length === 0) return {};
+    return suggestions.reduce((acc: Record<string, SearchAddressOutput>, suggestion) => {
+      const kindKey = suggestion.kind || 'other';
+      const kind = KIND_TRANSLATIONS[kindKey] || KIND_TRANSLATIONS['other'];
+      if (!acc[kind]) {
+        acc[kind] = [];
+      }
+      acc[kind].push(suggestion);
+      return acc;
+    }, {});
+  }, [suggestions]);
 
   const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY;
 
@@ -206,10 +238,10 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
           <>
             <CardHeader>
               <CardTitle>{step === 'pickup' ? 'Откуда забрать?' : 'Куда доставить?'}</CardTitle>
-              <CardDescription>Начните вводить адрес или выберите точку на карте.</CardDescription>
+              <CardDescription>Начните вводить адрес, выберите точку на карте или перетащите метку.</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2">
                 {pickup && (
                   <div className="flex-1 cursor-pointer rounded-md bg-muted p-2 text-sm" onClick={() => {
                       setStep('pickup');
@@ -239,26 +271,23 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
               </div>
               {suggestions.length > 0 && (
                 <div className="mt-2 max-h-48 overflow-y-auto rounded-md border">
-                  {suggestions.map((s) => (
-                    <div
-                      key={s.address + s.coords.join(',')}
-                      onClick={() => handleSelectAddress(s)}
-                      className="cursor-pointer p-2 text-sm hover:bg-muted"
-                    >
-                      {s.address}
-                    </div>
+                  {Object.entries(groupedSuggestions).map(([kind, items]) => (
+                      <div key={kind}>
+                          <p className="p-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">{kind}</p>
+                          {items.map((s) => (
+                              <div
+                                key={s.address + s.coords.join(',')}
+                                onClick={() => handleSelectAddress(s)}
+                                className="cursor-pointer p-2 pl-4 text-sm hover:bg-muted"
+                              >
+                                {s.address}
+                              </div>
+                          ))}
+                      </div>
                   ))}
                 </div>
               )}
             </CardContent>
-            {pickup && dropoff && !priceInfo && (
-              <CardFooter>
-                <Button className="w-full" onClick={handleCalculate} disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : <Wallet className="mr-2"/>}
-                  Рассчитать стоимость
-                </Button>
-              </CardFooter>
-            )}
           </>
         );
       case 'details':
@@ -334,27 +363,57 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
           className={cn("absolute inset-0", (isReverseGeocoding || isLoading) && "cursor-wait")}
           onClick={handleMapClick}
         >
-          {pickup && <Placemark geometry={pickup.coords} options={{preset: 'islands#greenDotIconWithCaption'}} properties={{iconCaption: 'Отсюда'}} />}
-          {dropoff && <Placemark geometry={dropoff.coords} options={{preset: 'islands#redDotIconWithCaption'}} properties={{iconCaption: 'Сюда'}} />}
+          {pickup && (
+            <Placemark 
+                geometry={pickup.coords} 
+                options={{preset: 'islands#greenDotIconWithCaption', draggable: true}} 
+                properties={{iconCaption: 'Отсюда'}}
+                onDragStart={() => setIsDragging(true)}
+                onDragEnd={(e) => handleDragEnd(e, 'pickup')}
+            />
+          )}
+          {dropoff && (
+            <Placemark 
+                geometry={dropoff.coords} 
+                options={{preset: 'islands#redDotIconWithCaption', draggable: true}} 
+                properties={{iconCaption: 'Сюда'}}
+                onDragStart={() => setIsDragging(true)}
+                onDragEnd={(e) => handleDragEnd(e, 'dropoff')}
+            />
+          )}
           {isReverseGeocoding && clickedCoords && <Placemark geometry={clickedCoords} options={{ preset: 'islands#circleIcon', iconColor: '#ff8a00' }} />}
           
           {priceInfo && priceInfo.routeGeometry.length > 0 && (
             <Polyline
               geometry={priceInfo.routeGeometry}
               options={{
-                strokeColor: '#007bff',
-                strokeWidth: 4,
+                strokeColor: '#db2777', // Tailwind pink-600 to match primary
+                strokeWidth: 5,
                 strokeOpacity: 0.8,
               }}
             />
           )}
         </Map>
+
+        {isDragging && (
+            <div className="absolute top-1/2 left-1/2 z-20 -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-background/80 p-4 shadow-lg backdrop-blur-sm">
+                <div className="flex items-center gap-2 text-foreground">
+                    <Move className="h-5 w-5 animate-pulse" />
+                    <span>Переместите метку...</span>
+                </div>
+            </div>
+        )}
+        
         <div className="absolute top-0 left-0 right-0 z-10 m-2 md:m-4">
             <Button variant="ghost" size="icon" onClick={onOrderCreated} className="absolute top-2 left-2 bg-card hover:bg-muted md:hidden">
               <ArrowLeft />
             </Button>
-            <Card className="mx-auto max-w-md">
-                {renderPanelContent()}
+            <Card className={cn("mx-auto max-w-md transition-opacity", isDragging && 'opacity-30 pointer-events-none')}>
+                {(isLoading && !isDragging) ? (
+                     <div className="flex min-h-[150px] items-center justify-center p-6">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                     </div>
+                ) : renderPanelContent()}
             </Card>
         </div>
       </div>

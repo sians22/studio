@@ -17,7 +17,8 @@ export type SearchAddressInput = z.infer<typeof SearchAddressInputSchema>;
 
 const AddressSuggestionSchema = z.object({
     address: z.string().describe('Полный текст адреса.'),
-    coords: z.array(z.number()).length(2).describe('Координаты адреса [широта, долгота].')
+    coords: z.array(z.number()).length(2).describe('Координаты адреса [широта, долгота].'),
+    kind: z.string().optional().describe('Тип объекта (например, house, street).')
 });
 
 const SearchAddressOutputSchema = z.array(AddressSuggestionSchema).describe('Список подходящих адресных предложений.');
@@ -60,12 +61,17 @@ const searchAddressFlow = ai.defineFlow(
             const geoObject = item.GeoObject;
             if (!geoObject) return null;
             
-            const address = geoObject.metaDataProperty?.GeocoderMetaData?.text;
+            const geocoderMetaData = geoObject.metaDataProperty?.GeocoderMetaData;
+            if (!geocoderMetaData) return null;
+
+            const address = geocoderMetaData.text;
+            const kind = geocoderMetaData.kind;
             const pos = geoObject.Point?.pos;
+
             if (!address || !pos) return null;
             
             const [lon, lat] = pos.split(' ').map(Number);
-            return { address, coords: [lat, lon] };
+            return { address, coords: [lat, lon], kind };
           })
           .filter(Boolean) as SearchAddressOutput;
       }
