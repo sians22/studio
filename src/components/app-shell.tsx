@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, PlusCircle, User, LogOut, MessageSquare, Briefcase, Settings, LayoutDashboard } from "lucide-react";
+import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList, Settings } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/icons";
@@ -9,12 +9,25 @@ import CustomerDashboard from "@/components/customer/customer-dashboard";
 import CourierDashboard from "@/components/courier/courier-dashboard";
 import AdminDashboard from "@/components/admin/admin-dashboard";
 import { ThemeSwitcher } from "./theme-switcher";
+import SupportPage from "./support-page";
+import AccountPage from "./account-page";
+import BrowsePage from "./browse-page";
 
 export default function AppShell() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [activeTab, setActiveTab] = useState("home");
 
-  const renderDashboard = () => {
+  const renderContent = () => {
+    if (activeTab === 'support') {
+      return <SupportPage onBack={() => setActiveTab('account')} />;
+    }
+    if (activeTab === 'account') {
+      return <AccountPage onBack={() => setActiveTab('home')} onNavigate={setActiveTab} />;
+    }
+    if (activeTab === 'browse') {
+      return <BrowsePage onBack={() => setActiveTab('home')} />;
+    }
+    
     switch (user?.role) {
       case "customer":
         return <CustomerDashboard activeTab={activeTab} setActiveTab={setActiveTab} />;
@@ -28,28 +41,24 @@ export default function AppShell() {
   };
 
   const getNavItems = () => {
-    const commonItems = [
-      { id: "support", label: "Support", icon: MessageSquare, href: `https://wa.me/905555555555?text=${encodeURIComponent("Yardımcı olur musunuz?")}`},
-      { id: "profile", label: "Profile", icon: User, action: () => setActiveTab("profile") },
-    ];
-
     switch (user?.role) {
       case "customer":
         return [
           { id: "home", label: "Home", icon: Home, action: () => setActiveTab("home") },
-          { id: "create", label: "New Order", icon: PlusCircle, action: () => setActiveTab("create") },
-          ...commonItems
+          { id: "orders", label: "Orders", icon: ClipboardList, action: () => setActiveTab("home") },
+          { id: "browse", label: "Browse", icon: Search, action: () => setActiveTab("browse") },
+          { id: "account", label: "Account", icon: User, action: () => setActiveTab("account") },
         ];
       case "courier":
         return [
-          { id: "home", label: "Orders", icon: Briefcase, action: () => setActiveTab("home") },
-          ...commonItems
+          { id: "home", label: "Jobs", icon: Briefcase, action: () => setActiveTab("home") },
+          { id: "browse", label: "Browse", icon: Search, action: () => setActiveTab("browse") },
+          { id: "account", label: "Account", icon: User, action: () => setActiveTab("account") },
         ];
       case "admin":
-        return [
-          { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, action: () => setActiveTab("home") },
-           { id: "settings", label: "Settings", icon: Settings, action: () => setActiveTab("settings") },
-          ...commonItems
+         return [
+          { id: "home", label: "Dashboard", icon: LayoutDashboard, action: () => setActiveTab("home") },
+          { id: "account", label: "Account", icon: User, action: () => setActiveTab("account") },
         ];
       default:
         return [];
@@ -64,43 +73,26 @@ export default function AppShell() {
         <Logo />
         <div className="flex items-center gap-2">
           <ThemeSwitcher />
-          <Button variant="ghost" size="icon" onClick={logout}>
-            <LogOut className="h-5 w-5" />
-            <span className="sr-only">Logout</span>
-          </Button>
         </div>
       </header>
       
       <main className="flex-1 overflow-y-auto bg-background pb-20">
-        {renderDashboard()}
+        {renderContent()}
       </main>
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-card md:hidden">
-        <div className="mx-auto flex h-16 max-w-md justify-around">
+        <div className="mx-auto grid h-16 max-w-md" style={{ gridTemplateColumns: `repeat(${navItems.length}, 1fr)`}}>
           {navItems.map((item) => (
-             item.href ? (
-                <a
-                  key={item.id}
-                  href={item.href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex flex-col items-center justify-center gap-1 p-2 text-muted-foreground hover:text-primary"
-                >
-                  <item.icon className="h-7 w-7" />
-                  <span className="sr-only">{item.label}</span>
-                </a>
-              ) : (
-                <button
-                  key={item.id}
-                  onClick={item.action}
-                  className={`flex flex-col items-center justify-center gap-1 p-2
-                    ${activeTab === item.id ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
-                >
-                  <item.icon className="h-7 w-7" />
-                  <span className="sr-only">{item.label}</span>
-                </button>
-              )
+            <button
+              key={item.id}
+              onClick={item.action}
+              className={`flex flex-col items-center justify-center gap-1 p-2 text-xs transition-colors
+                ${activeTab === item.id ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+            >
+              <item.icon className="h-6 w-6" />
+              <span>{item.label}</span>
+            </button>
           ))}
         </div>
       </nav>
