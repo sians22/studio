@@ -48,8 +48,8 @@ export default function AdminDashboard() {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
-      <Tabs defaultValue="dashboard" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+      <Tabs defaultValue="orders" className="w-full">
+        <TabsList className="inline-flex h-auto rounded-lg bg-muted p-1 text-muted-foreground">
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="orders">All Orders</TabsTrigger>
           <TabsTrigger value="users">Users</TabsTrigger>
