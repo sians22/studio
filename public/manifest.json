@@ -2,22 +2,21 @@
   "name": "Hızlı Kurye",
   "short_name": "Hızlı Kurye",
   "description": "Hızlı Kurye - Your fast and reliable delivery partner.",
-  "start_url": "/",
-  "display": "standalone",
-  "background_color": "#f0f2f5",
-  "theme_color": "#3b82f6",
   "icons": [
     {
-      "src": "https://placehold.co/192x192.png",
+      "src": "/android-chrome-192x192.png",
       "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     },
     {
-      "src": "https://placehold.co/512x512.png",
+      "src": "/android-chrome-512x512.png",
       "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any maskable"
+      "type": "image/png"
     }
-  ]
+  ],
+  "theme_color": "#29ABE2",
+  "background_color": "#F0F2F5",
+  "display": "standalone",
+  "scope": "/",
+  "start_url": "/"
 }
