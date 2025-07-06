@@ -8,6 +8,7 @@ import { useOrders } from '@/context/order-context';
 import { useAuth } from '@/context/auth-context';
 import { usePricing } from '@/context/pricing-context';
 import { searchAddress, SearchAddressOutput } from '@/ai/flows/search-address';
+import { getAddressFromCoords } from '@/ai/flows/reverse-geocode';
 import { calculateDeliveryPrice, CalculateDeliveryPriceOutput } from '@/ai/flows/calculate-delivery-price';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,6 +40,8 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   const [suggestions, setSuggestions] = useState<SearchAddressOutput>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+  const [clickedCoords, setClickedCoords] = useState<[number, number] | null>(null);
 
   const mapRef = useRef<any>(null);
 
@@ -56,6 +59,34 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
       setSuggestions([]);
     }
   }, [debouncedSearchQuery, toast]);
+  
+  const handleMapClick = async (e: any) => {
+    if (isReverseGeocoding || isLoading) return; // Prevent clicks during any loading state
+    const coords: [number, number] = e.get('coords');
+    if (!coords) return;
+
+    setIsReverseGeocoding(true);
+    setClickedCoords(coords); // Show temporary placemark
+
+    try {
+      const result = await getAddressFromCoords({ coords });
+      if (result) {
+        handleSelectAddress(result);
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Адрес не найден',
+          description: 'Не удалось определить адрес для выбранной точки. Попробуйте щелкнуть рядом.',
+        });
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast({ variant: 'destructive', title: 'Ошибка определения адреса', description: err.message });
+    } finally {
+      setIsReverseGeocoding(false);
+      setClickedCoords(null); // Hide temporary placemark
+    }
+  };
 
   const handleSelectAddress = (address: Address) => {
     if (step === 'pickup') {
@@ -175,7 +206,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
           <>
             <CardHeader>
               <CardTitle>{step === 'pickup' ? 'Откуда забрать?' : 'Куда доставить?'}</CardTitle>
-              <CardDescription>Начните вводить адрес, чтобы увидеть предложения.</CardDescription>
+              <CardDescription>Начните вводить адрес или выберите точку на карте.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="flex gap-2">
@@ -204,7 +235,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus
                 />
-                {isSearching && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
+                {(isSearching || isReverseGeocoding) && <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-muted-foreground" />}
               </div>
               {suggestions.length > 0 && (
                 <div className="mt-2 max-h-48 overflow-y-auto rounded-md border">
@@ -300,10 +331,13 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
           state={mapState}
           width="100%"
           height="100%"
-          className="absolute inset-0"
+          className={cn("absolute inset-0", (isReverseGeocoding || isLoading) && "cursor-wait")}
+          onClick={handleMapClick}
         >
           {pickup && <Placemark geometry={pickup.coords} options={{preset: 'islands#greenDotIconWithCaption'}} properties={{iconCaption: 'Отсюда'}} />}
           {dropoff && <Placemark geometry={dropoff.coords} options={{preset: 'islands#redDotIconWithCaption'}} properties={{iconCaption: 'Сюда'}} />}
+          {isReverseGeocoding && clickedCoords && <Placemark geometry={clickedCoords} options={{ preset: 'islands#circleIcon', iconColor: '#ff8a00' }} />}
+          
           {priceInfo && priceInfo.routeGeometry.length > 0 && (
             <Polyline
               geometry={priceInfo.routeGeometry}
