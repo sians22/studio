@@ -11,7 +11,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const SearchAddressInputSchema = z.object({
-  query: z.string().min(3).describe('Адресный запрос для поиска.'),
+  query: z.string().describe('Адресный запрос для поиска.'),
 });
 export type SearchAddressInput = z.infer<typeof SearchAddressInputSchema>;
 
@@ -49,7 +49,7 @@ const searchAddressFlow = ai.defineFlow(
     try {
       const response = await fetch(url);
       if (!response.ok) {
-        console.error('Error fetching from Yandex Geocoder:', response.statusText);
+        console.error('Error fetching from Yandex Geocoder:', response.statusText, await response.text());
         return [];
       }
       const data = await response.json();

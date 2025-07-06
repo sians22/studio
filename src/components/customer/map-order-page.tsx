@@ -43,7 +43,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   const mapRef = useRef<any>(null);
 
   useEffect(() => {
-    if (debouncedSearchQuery.length > 2) {
+    if (debouncedSearchQuery) {
       setIsSearching(true);
       searchAddress({ query: debouncedSearchQuery })
         .then(setSuggestions)
