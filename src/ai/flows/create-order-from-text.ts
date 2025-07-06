@@ -59,9 +59,17 @@ const extractionPrompt = ai.definePrompt({
     model: 'googleai/gemini-1.5-flash-latest',
     input: { schema: z.object({ query: z.string() }) },
     output: { schema: ExtractedInfoSchema },
-    prompt: `You are an intelligent order processing agent for a courier service. Your task is to extract delivery details from the user's request.
+    prompt: `You are an intelligent order processing agent for a courier service based in Russia. Your task is to extract delivery details from a user's request in Russian.
     The user's request is: "{{query}}"
-    Extract the pickup address, dropoff address, sender phone, receiver phone, and a description. Be precise.
+
+    Carefully analyze the text and extract the following information:
+    - pickupAddressQuery: The starting point for the delivery. This should be a real-world place, like a street address, a landmark, or a well-known location. (e.g., "проспект Путина, 1", "мечеть Сердце Чечни", "ТРЦ Грозный Молл").
+    - dropoffAddressQuery: The destination for the delivery. This should also be a real-world place.
+    - senderPhone: The phone number of the person sending the package.
+    - receiverPhone: The phone number of the person receiving the package.
+    - description: Any other relevant details or notes for the courier.
+
+    Be very precise with the addresses. If an address seems vague or nonsensical (like "Ftc"), try to find the most plausible real address mentioned in the text. If no valid address can be identified, leave the field empty.
     `,
 });
 
