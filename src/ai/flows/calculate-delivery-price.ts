@@ -12,30 +12,6 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import type { PricingTier } from '@/context/pricing-context';
 
-// Helper function to geocode an address using Yandex Maps API
-async function geocodeAddress(address: string): Promise<[number, number] | null> {
-    const apiKey = process.env.YANDEX_API_KEY;
-    if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
-        console.error("Yandex API key is not set or is a placeholder in the .env file.");
-        throw new Error("Ключ API Яндекс не настроен. Пожалуйста, получите ключ и добавьте его в файл .env.");
-    }
-    const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${encodeURIComponent(address)}&format=json&lang=ru_RU&results=1`;
-    try {
-        const response = await fetch(url);
-        if (!response.ok) return null;
-        const data = await response.json();
-        const pos = data.response?.GeoObjectCollection?.featureMember[0]?.GeoObject?.Point?.pos;
-        if (pos) {
-            const [lon, lat] = pos.split(' ').map(Number);
-            return [lat, lon]; // Return as [lat, lon]
-        }
-        return null;
-    } catch (error) {
-        console.error("Geocoding error:", error);
-        return null;
-    }
-}
-
 // Helper function to get route distance from Yandex Maps Directions API
 async function getRoute(startCoords: [number, number], endCoords: [number, number]): Promise<{ distance: number; geometry: number[][] } | null> {
     const apiKey = process.env.YANDEX_API_KEY;
@@ -48,7 +24,10 @@ async function getRoute(startCoords: [number, number], endCoords: [number, numbe
     const url = `https://api.routing.yandex.net/v2/route?apikey=${apiKey}&waypoints=${waypoints}&mode=driving`;
      try {
         const response = await fetch(url);
-        if (!response.ok) return null;
+        if (!response.ok) {
+            console.error("Yandex Directions API error:", response.status, await response.text());
+            return null;
+        }
         const data = await response.json();
 
         const route = data.routes?.[0];
@@ -75,6 +54,8 @@ const PricingTierSchema = z.object({
 const CalculateDeliveryPriceInputSchema = z.object({
   pickupAddress: z.string().describe('Адрес, откуда будет осуществляться доставка.'),
   dropoffAddress: z.string().describe('Адрес, куда будет осуществляться доставка.'),
+  pickupCoords: z.array(z.number()).length(2).describe('Координаты точки отправления [широта, долгота].'),
+  dropoffCoords: z.array(z.number()).length(2).describe('Координаты точки доставки [широта, долгота].'),
   pricingTiers: z.array(PricingTierSchema).describe('Массив тарифных планов для расчета.'),
 });
 export type CalculateDeliveryPriceInput = z.infer<typeof CalculateDeliveryPriceInputSchema>;
@@ -116,11 +97,11 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
     outputSchema: CalculateDeliveryPriceOutputSchema,
   },
   async input => {
-    const pickupCoords = await geocodeAddress(input.pickupAddress);
-    const dropoffCoords = await geocodeAddress(input.dropoffAddress);
+    const pickupCoords = input.pickupCoords as [number, number];
+    const dropoffCoords = input.dropoffCoords as [number, number];
 
     if (!pickupCoords || !dropoffCoords) {
-        throw new Error('Не удалось геокодировать один или оба адреса.');
+        throw new Error('Не удалось получить координаты для одного или обоих адресов.');
     }
 
     const routeInfo = await getRoute(pickupCoords, dropoffCoords);

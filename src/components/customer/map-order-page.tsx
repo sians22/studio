@@ -84,6 +84,8 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
       const result = await calculateDeliveryPrice({
         pickupAddress: pickup.address,
         dropoffAddress: dropoff.address,
+        pickupCoords: pickup.coords,
+        dropoffCoords: dropoff.coords,
         pricingTiers,
       });
       setPriceInfo(result);
