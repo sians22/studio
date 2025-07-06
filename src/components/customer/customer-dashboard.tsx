@@ -23,7 +23,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
 
   const handleCancelOrder = (orderId: string) => {
     const order = orders.find(o => o.id === orderId);
-    if (order && order.status === "Ожидание") {
+    if (order && !['Доставлен', 'Отменен'].includes(order.status)) {
       updateOrderStatus(orderId, "Отменен");
     }
   };
@@ -54,7 +54,6 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
       ) : (
         <div className="space-y-4 py-4 md:space-y-8">
           {customerOrders.map((order) => {
-            const canCancel = order.status === "Ожидание";
             return (
               <Card key={order.id} className="rounded-none border-x-0 border-b md:rounded-lg md:border">
                 <CardHeader className="flex flex-row items-center justify-between p-3">
@@ -71,8 +70,8 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                   <div className="relative aspect-video w-full">
                     <Image
                       src="https://placehold.co/600x400.png"
-                      data-ai-hint="map route"
-                      alt="Карта маршрута"
+                      data-ai-hint="delivery car"
+                      alt="Изображение доставки"
                       fill
                       className="object-cover"
                     />
@@ -96,7 +95,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                       <p className="text-xs text-muted-foreground">
                         {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ru })}
                       </p>
-                       {canCancel && (
+                       {!['Доставлен', 'Отменен'].includes(order.status) && (
                           <Button
                             variant="link"
                             className="h-auto p-0 text-destructive"
