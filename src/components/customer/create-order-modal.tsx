@@ -23,17 +23,19 @@ import { Loader2, Rocket, MapPin, Wallet, Phone, MessageSquareText, ArrowLeft } 
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader } from '../ui/card';
 
-type OrderStep = 'pickup' | 'dropoff' | 'senderPhone' | 'receiverPhone' | 'description' | 'calculating' | 'confirming' | 'done';
+type OrderStep = 'pickup' | 'pickupDetails' | 'dropoff' | 'dropoffDetails' | 'senderPhone' | 'receiverPhone' | 'description' | 'calculating' | 'confirming' | 'done';
 
 const initialFormData = {
   pickupAddress: '',
+  pickupDetails: '',
   dropoffAddress: '',
+  dropoffDetails: '',
   senderPhone: '',
   receiverPhone: '',
   description: '',
 };
 
-const steps: OrderStep[] = ['pickup', 'dropoff', 'senderPhone', 'receiverPhone', 'description', 'confirming'];
+const steps: OrderStep[] = ['pickup', 'pickupDetails', 'dropoff', 'dropoffDetails', 'senderPhone', 'receiverPhone', 'description', 'confirming'];
 
 export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boolean; onOpenChange: (open: boolean) => void; }) {
   const { toast } = useToast();
@@ -69,10 +71,16 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
     switch (step) {
       case 'pickup':
         if (formData.pickupAddress.length < 10) return;
+        setStep('pickupDetails');
+        break;
+      case 'pickupDetails':
         setStep('dropoff');
         break;
       case 'dropoff':
         if (formData.dropoffAddress.length < 10) return;
+        setStep('dropoffDetails');
+        break;
+      case 'dropoffDetails':
         setStep('senderPhone');
         break;
       case 'senderPhone':
@@ -97,9 +105,16 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
         break;
       case 'confirming':
         if (priceInfo && user) {
+          const finalPickupAddress = [formData.pickupAddress, formData.pickupDetails].filter(Boolean).join(', ');
+          const finalDropoffAddress = [formData.dropoffAddress, formData.dropoffDetails].filter(Boolean).join(', ');
+          
           addOrder({
             customerId: user.id,
-            ...formData,
+            pickupAddress: finalPickupAddress,
+            dropoffAddress: finalDropoffAddress,
+            senderPhone: formData.senderPhone,
+            receiverPhone: formData.receiverPhone,
+            description: formData.description,
             price: priceInfo.priceTl,
             distance: priceInfo.distanceKm,
           });
@@ -150,9 +165,9 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
     setSuggestions([]);
 
     if (fieldName === 'pickupAddress') {
-        setStep('dropoff');
+        setStep('pickupDetails');
     } else if (fieldName === 'dropoffAddress') {
-        setStep('senderPhone');
+        setStep('dropoffDetails');
     }
   };
   
@@ -177,8 +192,17 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
           <div>
             <DialogDescription>Шаг 1: Введите адрес, откуда нужно забрать посылку.</DialogDescription>
             <div className="relative mt-4">
-              <Input placeholder="например, ул. Тверская, Москва" value={formData.pickupAddress} onChange={e => handleAddressChange(e.target.value, 'pickupAddress')} autoComplete="off" />
+              <Input placeholder="Город, улица и номер дома" value={formData.pickupAddress} onChange={e => handleAddressChange(e.target.value, 'pickupAddress')} autoComplete="off" />
               {renderAddressSuggestions('pickupAddress')}
+            </div>
+          </div>
+        );
+      case 'pickupDetails':
+        return (
+          <div>
+            <DialogDescription>Уточните адрес отправления (необязательно).</DialogDescription>
+            <div className="relative mt-4">
+              <Input placeholder="Квартира, офис, подъезд" value={formData.pickupDetails} onChange={e => setFormData({...formData, pickupDetails: e.target.value})} autoComplete="off" />
             </div>
           </div>
         );
@@ -187,11 +211,20 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
             <div>
               <DialogDescription>Шаг 2: Введите адрес, куда нужно доставить.</DialogDescription>
               <div className="relative mt-4">
-                <Input placeholder="например, Красная площадь, Москва" value={formData.dropoffAddress} onChange={e => handleAddressChange(e.target.value, 'dropoffAddress')} autoComplete="off" />
+                <Input placeholder="Город, улица и номер дома" value={formData.dropoffAddress} onChange={e => handleAddressChange(e.target.value, 'dropoffAddress')} autoComplete="off" />
                 {renderAddressSuggestions('dropoffAddress')}
               </div>
             </div>
           );
+      case 'dropoffDetails':
+        return (
+          <div>
+            <DialogDescription>Уточните адрес доставки (необязательно).</DialogDescription>
+            <div className="relative mt-4">
+              <Input placeholder="Квартира, офис, подъезд" value={formData.dropoffDetails} onChange={e => setFormData({...formData, dropoffDetails: e.target.value})} autoComplete="off" />
+            </div>
+          </div>
+        );
       case 'senderPhone':
         return (
             <div>
@@ -255,7 +288,9 @@ export default function CreateOrderModal({ isOpen, onOpenChange }: { isOpen: boo
   const isNextDisabled = () => {
     switch(step) {
         case 'pickup': return formData.pickupAddress.length < 10;
+        case 'pickupDetails': return false;
         case 'dropoff': return formData.dropoffAddress.length < 10;
+        case 'dropoffDetails': return false;
         case 'senderPhone': return formData.senderPhone.length < 10;
         case 'receiverPhone': return formData.receiverPhone.length < 10;
         default: return false;
