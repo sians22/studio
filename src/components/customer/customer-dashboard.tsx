@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, PlusCircle, UserCircle, MoreHorizontal, Heart, MessageCircle, Send, Bookmark } from "lucide-react";
 import MapOrderPage from "./map-order-page";
+import AiOrderPage from "./ai-order-page";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
 import { useState, useEffect } from "react";
@@ -31,6 +32,10 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
   
   if (activeTab === 'create') {
     return <MapOrderPage onOrderCreated={() => setActiveTab('home')} />;
+  }
+
+  if (activeTab === 'ai-create') {
+    return <AiOrderPage onOrderCreated={() => setActiveTab('home')} />;
   }
 
   return (

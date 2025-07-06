@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList, Heart, Send, PlusCircle } from "lucide-react";
+import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList, Heart, Send, PlusCircle, Wand2 } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/icons";
 import CustomerDashboard from "@/components/customer/customer-dashboard";
@@ -50,6 +50,7 @@ export default function AppShell() {
         return [
           { id: "home", label: "Главная", icon: Home, action: () => setActiveTab("home") },
           { id: "create", label: "Создать", icon: PlusCircle, action: () => setActiveTab("create") },
+          { id: "ai-create", label: "AI Заказ", icon: Wand2, action: () => setActiveTab("ai-create") },
           { id: "browse", label: "Обзор", icon: Search, action: () => setActiveTab("browse") },
           { id: "account", label: "Аккаунт", icon: User, action: () => setActiveTab("account") },
         ];
