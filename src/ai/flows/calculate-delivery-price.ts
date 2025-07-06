@@ -13,7 +13,7 @@ import {z} from 'zod';
 import type { PricingTier } from '@/context/pricing-context';
 
 // Helper function to get route distance from Yandex Maps Directions API
-async function getRoute(startCoords: [number, number], endCoords: [number, number]): Promise<{ distance: number; geometry: number[][] } | null> {
+async function getRoute(startCoords: [number, number], endCoords: [number, number]): Promise<{ distance: number; geometry: number[][] }> {
     const apiKey = process.env.YANDEX_API_KEY;
      if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
         console.error("Yandex API key is not set or is a placeholder in the .env file.");
@@ -25,13 +25,22 @@ async function getRoute(startCoords: [number, number], endCoords: [number, numbe
      try {
         const response = await fetch(url);
         if (!response.ok) {
-            console.error("Yandex Directions API error:", response.status, await response.text());
-            return null;
+            const errorText = await response.text();
+            console.error("Yandex Directions API error:", response.status, errorText);
+            if(response.status === 403) {
+                throw new Error("Ошибка доступа к API Маршрутов. Убедитесь, что ваш ключ имеет права на 'Directions API'.");
+            }
+             if (response.status === 404 && errorText.includes("points not found")) {
+                throw new Error("Одна из точек не найдена на дороге. Попробуйте выбрать точки ближе к проезжей части.");
+            }
+            throw new Error(`Ошибка API Яндекс Маршрутов: ${response.status}.`);
         }
         const data = await response.json();
 
         const route = data.routes?.[0];
-        if (!route) return null;
+        if (!route) {
+          throw new Error("API Яндекса не вернул маршрут для указанных точек. Попробуйте другие адреса.");
+        }
         
         const distanceMeters = route.summary?.distance?.value;
         const geometry = route.geometry.map((point: [number, number]) => [point[1], point[0]]); // Swap to lat,lon
@@ -42,7 +51,10 @@ async function getRoute(startCoords: [number, number], endCoords: [number, numbe
         };
     } catch (error) {
         console.error("Routing error:", error);
-        return null;
+        if (error instanceof Error) {
+            throw error;
+        }
+        throw new Error("Неизвестная ошибка при построении маршрута.");
     }
 }
 
@@ -105,10 +117,6 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
     }
 
     const routeInfo = await getRoute(pickupCoords, dropoffCoords);
-    
-    if (routeInfo === null) {
-        throw new Error('Не удалось рассчитать расстояние маршрута.');
-    }
     
     const distanceKm = parseFloat(routeInfo.distance.toFixed(2));
     const routeGeometry = routeInfo.geometry;
