@@ -118,8 +118,8 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
       toast({ 
           variant: 'destructive', 
           title: 'Ошибка расчета маршрута', 
-          description: 'Не удалось проложить маршрут. Пожалуйста, попробуйте другие адреса или убедитесь, что ваш API-ключ имеет доступ к "Directions API".',
-          duration: 6000,
+          description: error.message,
+          duration: 9000,
       });
       // Reset if calculation fails
       setDropoff(null);

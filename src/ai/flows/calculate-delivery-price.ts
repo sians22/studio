@@ -24,22 +24,27 @@ async function getRoute(startCoords: [number, number], endCoords: [number, numbe
     const url = `https://api.routing.yandex.net/v2/route?apikey=${apiKey}&waypoints=${waypoints}&mode=driving`;
      try {
         const response = await fetch(url);
+        const data = await response.json(); // Read JSON regardless of status
+
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Yandex Directions API error:", response.status, errorText);
+            console.error("Yandex Directions API error response:", JSON.stringify(data, null, 2));
             if(response.status === 403) {
-                throw new Error("Ошибка доступа к API Маршрутов. Убедитесь, что ваш ключ имеет права на 'Directions API'.");
+                throw new Error("Ошибка доступа к API Маршрутов (403). Убедитесь, что ваш ключ имеет права на 'Directions API' в кабинете разработчика Яндекс.");
             }
-             if (response.status === 404 && errorText.includes("points not found")) {
-                throw new Error("Одна из точек не найдена на дороге. Попробуйте выбрать точки ближе к проезжей части.");
+             if (response.status === 404 && data?.message?.includes("point not found")) {
+                throw new Error("Ошибка 404: Не удалось найти одну из точек на дороге. Попробуйте выбрать точки ближе к проезжей части.");
             }
-            throw new Error(`Ошибка API Яндекс Маршрутов: ${response.status}.`);
+            const errorMessage = data?.message || `Ошибка API Яндекс Маршрутов: ${response.status}.`;
+            throw new Error(errorMessage);
         }
-        const data = await response.json();
 
         const route = data.routes?.[0];
         if (!route) {
-          throw new Error("API Яндекса не вернул маршрут для указанных точек. Попробуйте другие адреса.");
+          console.error("Yandex API did not return a route. Full response:", JSON.stringify(data, null, 2));
+           if (data?.message) {
+               throw new Error(`Маршрут не найден: ${data.message}. Попробуйте другие адреса.`);
+           }
+          throw new Error("Маршрут не найден. Возможно, между точками нет автомобильной дороги. Пожалуйста, выберите другие адреса.");
         }
         
         const distanceMeters = route.summary?.distance?.value;
@@ -140,7 +145,13 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
     if (matchedTier) {
         pricingDetails = `Расстояние ${distanceKm} км соответствует тарифу "${matchedTier.range}", поэтому стоимость составляет ${calculatedPrice} руб.`;
     } else {
-        pricingDetails = 'Для данного расстояния не найден подходящий тариф.';
+         const highestTier = sortedTiers[sortedTiers.length - 1];
+        if (highestTier) {
+            calculatedPrice = highestTier.price;
+            pricingDetails = `Расстояние ${distanceKm} км превышает максимальный тариф, применяется цена "${highestTier.range}": ${calculatedPrice} руб.`;
+        } else {
+             pricingDetails = 'Для данного расстояния не найден подходящий тариф.';
+        }
     }
     // --- End of price calculation logic ---
     
