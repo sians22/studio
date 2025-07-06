@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList, Settings } from "lucide-react";
+import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList, PlusCircle } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
-import { Button } from "@/components/ui/button";
 import { Logo } from "@/components/icons";
 import CustomerDashboard from "@/components/customer/customer-dashboard";
 import CourierDashboard from "@/components/courier/courier-dashboard";
@@ -15,6 +14,8 @@ import BrowsePage from "./browse-page";
 
 export default function AppShell() {
   const { user } = useAuth();
+  // For customer, 'home' shows orders, 'create' shows form
+  // For others, 'home' is the main view.
   const [activeTab, setActiveTab] = useState("home");
 
   const renderContent = () => {
@@ -24,7 +25,7 @@ export default function AppShell() {
     if (activeTab === 'account') {
       return <AccountPage onBack={() => setActiveTab('home')} onNavigate={setActiveTab} />;
     }
-    if (activeTab === 'browse') {
+     if (activeTab === 'browse') {
       return <BrowsePage onBack={() => setActiveTab('home')} />;
     }
     
@@ -44,8 +45,8 @@ export default function AppShell() {
     switch (user?.role) {
       case "customer":
         return [
-          { id: "home", label: "Home", icon: Home, action: () => setActiveTab("home") },
-          { id: "orders", label: "Orders", icon: ClipboardList, action: () => setActiveTab("home") },
+          { id: "home", label: "Orders", icon: ClipboardList, action: () => setActiveTab("home") },
+          { id: "create", label: "New Order", icon: PlusCircle, action: () => setActiveTab("create") },
           { id: "browse", label: "Browse", icon: Search, action: () => setActiveTab("browse") },
           { id: "account", label: "Account", icon: User, action: () => setActiveTab("account") },
         ];
@@ -80,7 +81,7 @@ export default function AppShell() {
         {renderContent()}
       </main>
 
-      {/* Bottom Navigation */}
+      {/* Bottom Navigation for mobile */}
       <nav className="fixed bottom-0 left-0 right-0 z-10 border-t bg-card md:hidden">
         <div className="mx-auto grid h-16 max-w-md" style={{ gridTemplateColumns: `repeat(${navItems.length}, 1fr)`}}>
           {navItems.map((item) => (

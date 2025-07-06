@@ -1,0 +1,21 @@
+{
+  "name": "Hızlı Kurye",
+  "short_name": "HızlıKurye",
+  "description": "Hızlı Kurye - Your fast and reliable delivery partner.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1c1c1c",
+  "icons": [
+    {
+      "src": "/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

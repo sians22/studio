@@ -25,6 +25,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useOrders } from '@/context/order-context';
 import { useAuth } from '@/context/auth-context';
+import { usePricing } from '@/context/pricing-context';
 import { calculateDeliveryPrice } from '@/ai/flows/calculate-delivery-price';
 import type { CalculateDeliveryPriceOutput } from '@/ai/flows/calculate-delivery-price';
 import { Loader2, Rocket, MapPin, Wallet } from 'lucide-react';
@@ -42,6 +43,7 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
   const { toast } = useToast();
   const { addOrder } = useOrders();
   const { user } = useAuth();
+  const { tiers: pricingTiers } = usePricing();
   const [priceInfo, setPriceInfo] = useState<CalculateDeliveryPriceOutput | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -57,7 +59,7 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
     setIsLoading(true);
     setPriceInfo(null);
     try {
-      const result = await calculateDeliveryPrice(values);
+      const result = await calculateDeliveryPrice({ ...values, pricingTiers });
       setPriceInfo(result);
     } catch (error) {
       console.error('Error calculating price:', error);

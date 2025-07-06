@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from 'react';
 import { useOrders } from "@/context/order-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,6 +9,12 @@ import { DollarSign, Package, Users, Truck } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Order } from "@/types";
+import { usePricing } from '@/context/pricing-context';
+import type { PricingTier } from '@/context/pricing-context';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '../ui/alert-dialog';
+import { Input } from '../ui/input';
+import { Label } from '../ui/label';
+import { useToast } from '@/hooks/use-toast';
 
 const mockUsers = [
     { id: 'user-1', name: 'customer', role: 'Customer', orders: 5 },
@@ -17,15 +24,14 @@ const mockUsers = [
     { id: 'user-5', name: 'Mike Ross', role: 'Courier', deliveries: 8 },
 ];
 
-const mockPricing = [
-    { range: '0-3 km', price: '10 TL' },
-    { range: '3-5 km', price: '20 TL' },
-    { range: '5-10 km', price: '30 TL' },
-    { range: '10+ km', price: '50 TL' },
-];
 
 export default function AdminDashboard() {
   const { orders } = useOrders();
+  const { tiers, setTiers } = usePricing();
+  const { toast } = useToast();
+  const [isPricingDialogOpen, setIsPricingDialogOpen] = useState(false);
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [editableTiers, setEditableTiers] = useState<PricingTier[]>(tiers);
 
   const totalRevenue = orders
     .filter(o => o.status === 'Delivered')
@@ -44,6 +50,26 @@ export default function AdminDashboard() {
     }
   };
 
+  const handlePriceChange = (index: number, field: 'range' | 'price', value: string | number) => {
+    const newTiers = [...editableTiers];
+    if (field === 'price') {
+        newTiers[index][field] = Number(value);
+    } else {
+        newTiers[index][field] = String(value);
+    }
+    setEditableTiers(newTiers);
+  };
+  
+  const handleSavePricing = () => {
+      setTiers(editableTiers);
+      setIsPricingDialogOpen(false);
+      toast({ title: 'Success', description: 'Pricing tiers have been updated.' });
+  }
+
+  const handleAddUser = () => {
+      setIsUserDialogOpen(false);
+      toast({ title: 'Success (Simulation)', description: 'New user has been created.' });
+  }
 
   return (
     <div className="container mx-auto p-4">
@@ -133,7 +159,37 @@ export default function AdminDashboard() {
                     <CardDescription>Manage your customers and couriers.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Button>Add New User</Button>
+                     <AlertDialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
+                        <AlertDialogTrigger asChild>
+                            <Button>Add New User</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Add New User</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Create a new user account. This is a simulation.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div className="space-y-4 py-4">
+                               <div className="space-y-2">
+                                    <Label htmlFor="username">Username</Label>
+                                    <Input id="username" placeholder="e.g. john_doe" />
+                               </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="password">Password</Label>
+                                    <Input id="password" type="password" />
+                               </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="role">Role</Label>
+                                    <Input id="role" placeholder="customer, courier, or admin" />
+                               </div>
+                            </div>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleAddUser}>Create User</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                     <Table className="mt-4">
                         <TableHeader>
                             <TableRow>
@@ -162,22 +218,59 @@ export default function AdminDashboard() {
             <Card className="mt-4">
                 <CardHeader>
                     <CardTitle>Pricing Tiers</CardTitle>
-                    <CardDescription>Set the delivery prices based on distance.</CardDescription>
+                    <CardDescription>Set the delivery prices based on distance. These prices are used by the AI to calculate quotes.</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <Button>Edit Pricing</Button>
+                    <AlertDialog open={isPricingDialogOpen} onOpenChange={setIsPricingDialogOpen}>
+                        <AlertDialogTrigger asChild>
+                            <Button>Edit Pricing</Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Edit Pricing Tiers</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                Changes will be reflected in new order price calculations.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <div className="space-y-4 py-4">
+                                {editableTiers.map((tier, index) => (
+                                    <div key={index} className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <Label>Distance Range</Label>
+                                            <Input 
+                                                value={tier.range}
+                                                onChange={(e) => handlePriceChange(index, 'range', e.target.value)}
+                                            />
+                                        </div>
+                                        <div>
+                                            <Label>Price (TL)</Label>
+                                            <Input 
+                                                type="number"
+                                                value={tier.price}
+                                                onChange={(e) => handlePriceChange(index, 'price', e.target.value)}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleSavePricing}>Save Changes</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                      <Table className="mt-4">
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Distance Range</TableHead>
-                                <TableHead>Price</TableHead>
+                                <TableHead>Price (TL)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockPricing.map(tier => (
+                            {tiers.map(tier => (
                                 <TableRow key={tier.range}>
                                     <TableCell>{tier.range}</TableCell>
-                                    <TableCell>{tier.price}</TableCell>
+                                    <TableCell>{tier.price} TL</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

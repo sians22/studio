@@ -11,9 +11,15 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
+const PricingTierSchema = z.object({
+  range: z.string().describe('The distance range for this price tier (e.g., "0-3 km").'),
+  price: z.number().describe('The price for this tier in TL.'),
+});
+
 const CalculateDeliveryPriceInputSchema = z.object({
   pickupAddress: z.string().describe('The address where the delivery will be picked up from.'),
   dropoffAddress: z.string().describe('The address where the delivery will be dropped off at.'),
+  pricingTiers: z.array(PricingTierSchema).describe('An array of pricing tiers to use for the calculation.'),
 });
 export type CalculateDeliveryPriceInput = z.infer<typeof CalculateDeliveryPriceInputSchema>;
 
@@ -32,17 +38,18 @@ const calculateDeliveryPricePrompt = ai.definePrompt({
   name: 'calculateDeliveryPricePrompt',
   input: {schema: CalculateDeliveryPriceInputSchema},
   output: {schema: CalculateDeliveryPriceOutputSchema},
-  prompt: `You are a delivery price calculator. You take the pickup address and drop-off address as input, calculate the distance between them, and then calculate the delivery price based on the following pricing tiers:
-
-- 0-3 km: 10 TL
-- 3-5 km: 20 TL
-- 5-10 km: 30 TL
-- 10+ km: 50 TL
+  prompt: `You are a delivery price calculator. You take the pickup address and drop-off address as input, calculate the distance between them, and then calculate the delivery price based on the provided dynamic pricing tiers.
 
 Return the distance in kilometers, the calculated price in TL, and a brief explanation of the pricing details.
 
 Pickup Address: {{{pickupAddress}}}
-Drop-off Address: {{{dropoffAddress}}}`,
+Drop-off Address: {{{dropoffAddress}}}
+
+Use these pricing tiers for calculation:
+{{#each pricingTiers}}
+- {{this.range}}: {{this.price}} TL
+{{/each}}
+`,
 });
 
 const calculateDeliveryPriceFlow = ai.defineFlow(

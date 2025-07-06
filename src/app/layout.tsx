@@ -4,6 +4,7 @@ import {Toaster} from '@/components/ui/toaster';
 import {AuthProvider} from '@/context/auth-context';
 import {OrderProvider} from '@/context/order-context';
 import {ThemeProvider} from '@/context/theme-context';
+import { PricingProvider } from '@/context/pricing-context';
 
 export const metadata: Metadata = {
   title: 'Hızlı Kurye',
@@ -22,14 +23,18 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className="font-body antialiased">
         <ThemeProvider>
           <AuthProvider>
-            <OrderProvider>
-              {children}
-              <Toaster />
-            </OrderProvider>
+            <PricingProvider>
+              <OrderProvider>
+                {children}
+                <Toaster />
+              </OrderProvider>
+            </PricingProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

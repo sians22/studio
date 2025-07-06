@@ -5,7 +5,7 @@ import { useOrders } from "@/context/order-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Clock, X, CheckCircle, Truck, Map } from "lucide-react";
+import { Package, Clock, X, CheckCircle, Truck, Map, PlusCircle } from "lucide-react";
 import CreateOrderForm from "./create-order-form";
 import { formatDistanceToNow } from "date-fns";
 
@@ -51,14 +51,14 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
 
   return (
     <div className="container mx-auto max-w-2xl p-4">
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-bold">Welcome, {user?.username}!</h1>
-        <p className="text-muted-foreground">View your past orders or create a new one.</p>
-      </div>
-      
-      <div className="mb-4 hidden md:block">
-        <Button onClick={() => setActiveTab('create')} className="w-full bg-accent hover:bg-accent/90">
-            Create New Order
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Welcome, {user?.username}!</h1>
+          <p className="text-muted-foreground">View your past orders or create a new one.</p>
+        </div>
+        <Button onClick={() => setActiveTab('create')} size="lg" className="bg-accent hover:bg-accent/90 hidden md:flex">
+            <PlusCircle className="mr-2 h-5 w-5" />
+            Create Order
         </Button>
       </div>
 
@@ -74,7 +74,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
           </CardContent>
            <CardFooter>
              <Button onClick={() => setActiveTab('create')} className="w-full">
-                Create First Order
+                <PlusCircle className="mr-2 h-4 w-4" /> Create First Order
             </Button>
            </CardFooter>
         </Card>
@@ -126,7 +126,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                       onClick={() => handleCancelOrder(order.id)}
                       className="w-full"
                     >
-                      <X className="mr-2 h-4 w-4" /> Cancel Order
+                      <X className="mr-2 h-4 w-4" /> Cancel Order (3 min limit)
                     </Button>
                   </CardFooter>
                 )}
