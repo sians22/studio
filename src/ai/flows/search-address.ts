@@ -31,7 +31,7 @@ const searchAddressFlow = ai.defineFlow(
   async ({ query }) => {
     // Using OpenStreetMap Nominatim API - free, no API key needed, but has usage policies.
     // See: https://operations.osmfoundation.org/policies/nominatim/
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&countrycodes=tr,ru&limit=5&addressdetails=1`;
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Чеченская Республика')}&countrycodes=ru&limit=10&addressdetails=1`;
     
     try {
       const response = await fetch(url, {
