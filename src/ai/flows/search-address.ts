@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Flow to search for an address using OpenStreetMap Nominatim.
+ * @fileOverview Flow to search for an address using Yandex Maps Geocoder.
  *
  * - searchAddress - A function that searches for an address.
  * - SearchAddressInput - The input type for the searchAddress function.
@@ -29,27 +29,31 @@ const searchAddressFlow = ai.defineFlow(
     outputSchema: SearchAddressOutputSchema,
   },
   async ({ query }) => {
-    // Using OpenStreetMap Nominatim API - free, no API key needed, but has usage policies.
-    // See: https://operations.osmfoundation.org/policies/nominatim/
-    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ', Чеченская Республика')}&countrycodes=ru&limit=20&addressdetails=1`;
+    const apiKey = process.env.YANDEX_API_KEY;
+    if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
+        console.error("Yandex API key is not set in .env file.");
+        return ['Ошибка: Ключ API не настроен.'];
+    }
+
+    // Bounding box for Chechen Republic: [lon,lat~lon,lat] -> [44.5,42.4~46.8,44.0]
+    const bbox = "44.5,42.4~46.8,44.0";
+    
+    // Using Yandex Maps Geocoding API
+    const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${encodeURIComponent("Чеченская Республика, " + query)}&format=json&lang=ru_RU&results=20&bbox=${bbox}&rspn=1`;
     
     try {
-      const response = await fetch(url, {
-        headers: {
-            // OSM requires a descriptive User-Agent.
-            'User-Agent': 'BystryiKurierApp/1.0 (Firebase Studio Demo; mail@example.com)'
-        }
-      });
+      const response = await fetch(url);
       if (!response.ok) {
-        console.error('Error fetching from Nominatim:', response.statusText);
+        console.error('Error fetching from Yandex Geocoder:', response.statusText);
         return [];
       }
       const data = await response.json();
       
-      // We expect an array of objects with a 'display_name' property
-      if (Array.isArray(data)) {
-        return data
-          .map((item: any) => item.display_name)
+      const featureMembers = data.response?.GeoObjectCollection?.featureMember;
+
+      if (Array.isArray(featureMembers)) {
+        return featureMembers
+          .map((item: any) => item.GeoObject?.metaDataProperty?.GeocoderMetaData?.text)
           .filter(Boolean);
       }
       
