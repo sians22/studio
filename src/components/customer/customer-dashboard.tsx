@@ -118,7 +118,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                           </a>
                       </Button>
                   </div>
-                  <p><strong>Цена:</strong> {order.price} TL</p>
+                  <p><strong>Цена:</strong> {order.price} руб.</p>
                   {order.description && <p className="text-sm text-muted-foreground pt-1"><strong>Примечание:</strong> {order.description}</p>}
                 </CardContent>
                 {canCancel && (

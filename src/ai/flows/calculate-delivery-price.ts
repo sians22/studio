@@ -13,7 +13,7 @@ import {z} from 'genkit';
 
 const PricingTierSchema = z.object({
   range: z.string().describe('The distance range for this price tier (e.g., "0-3 km").'),
-  price: z.number().describe('The price for this tier in TL.'),
+  price: z.number().describe('Цена для этого тарифа в рублях.'),
 });
 
 const CalculateDeliveryPriceInputSchema = z.object({
@@ -25,7 +25,7 @@ export type CalculateDeliveryPriceInput = z.infer<typeof CalculateDeliveryPriceI
 
 const CalculateDeliveryPriceOutputSchema = z.object({
   distanceKm: z.number().describe('Расстояние между точками отправления и доставки в километрах.'),
-  priceTl: z.number().describe('Рассчитанная стоимость доставки в турецких лирах (TL).'),
+  priceTl: z.number().describe('Рассчитанная стоимость доставки в рублях.'),
   pricingDetails: z.string().describe('Подробности о том, как была рассчитана цена на основе тарифных планов.'),
 });
 export type CalculateDeliveryPriceOutput = z.infer<typeof CalculateDeliveryPriceOutputSchema>;
@@ -40,14 +40,14 @@ const calculateDeliveryPricePrompt = ai.definePrompt({
   output: {schema: CalculateDeliveryPriceOutputSchema},
   prompt: `Вы — калькулятор стоимости доставки. Вы принимаете адрес отправления и адрес доставки в качестве входных данных, рассчитываете расстояние между ними, а затем рассчитываете стоимость доставки на основе предоставленных динамических тарифных планов.
 
-Верните расстояние в километрах, рассчитанную цену в TL и краткое объяснение деталей ценообразования.
+Верните расстояние в километрах, рассчитанную цену в рублях и краткое объяснение деталей ценообразования.
 
 Адрес отправления: {{{pickupAddress}}}
 Адрес доставки: {{{dropoffAddress}}}
 
 Используйте эти тарифные планы для расчета:
 {{#each pricingTiers}}
-- {{this.range}}: {{this.price}} TL
+- {{this.range}}: {{this.price}} руб.
 {{/each}}
 `,
 });

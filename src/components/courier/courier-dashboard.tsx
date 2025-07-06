@@ -125,7 +125,7 @@ export default function CourierDashboard() {
                 <p><strong>Телефон получателя:</strong> {order.receiverPhone}</p>
                 {order.description && <p><strong>Примечание:</strong> {order.description}</p>}
                 <p><strong>Расстояние:</strong> {order.distance} km</p>
-                <p><strong>Оплата:</strong> {order.price} TL</p>
+                <p><strong>Оплата:</strong> {order.price} руб.</p>
               </CardContent>
               <CardFooter>
                 <Button className="w-full" onClick={() => handleAcceptOrder(order.id)}>

@@ -309,7 +309,7 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                 </div>
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-muted-foreground"><Wallet className="h-4 w-4" /> Цена</div>
-                    <div className="text-2xl font-bold text-primary">{priceInfo.priceTl} TL</div>
+                    <div className="text-2xl font-bold text-primary">{priceInfo.priceTl} руб.</div>
                 </div>
                 <p className="text-xs text-muted-foreground pt-2">{priceInfo.pricingDetails}</p>
               </CardContent>

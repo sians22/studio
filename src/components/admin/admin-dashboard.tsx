@@ -109,7 +109,7 @@ export default function AdminDashboard() {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{totalRevenue} TL</div>
+                <div className="text-2xl font-bold">{totalRevenue} руб.</div>
                 <p className="text-xs text-muted-foreground">С доставленных заказов</p>
               </CardContent>
             </Card>
@@ -159,7 +159,7 @@ export default function AdminDashboard() {
                                     <TableCell>#{order.id.slice(-6)}</TableCell>
                                     <TableCell>{order.customerId}</TableCell>
                                     <TableCell>{order.courierId || 'N/A'}</TableCell>
-                                    <TableCell>{order.price} TL</TableCell>
+                                    <TableCell>{order.price} руб.</TableCell>
                                     <TableCell>
                                         <Badge variant={getStatusVariant(order.status)}>{order.status}</Badge>
                                     </TableCell>
@@ -273,7 +273,7 @@ export default function AdminDashboard() {
                                             />
                                         </div>
                                         <div>
-                                            <Label>Цена (TL)</Label>
+                                            <Label>Цена (руб.)</Label>
                                             <Input 
                                                 type="number"
                                                 value={tier.price}
@@ -293,14 +293,14 @@ export default function AdminDashboard() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Диапазон расстояния</TableHead>
-                                <TableHead>Цена (TL)</TableHead>
+                                <TableHead>Цена (руб.)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {tiers.map(tier => (
                                 <TableRow key={tier.range}>
                                     <TableCell>{tier.range}</TableCell>
-                                    <TableCell>{tier.price} TL</TableCell>
+                                    <TableCell>{tier.price} руб.</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
