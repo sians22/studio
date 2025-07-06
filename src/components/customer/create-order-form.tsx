@@ -40,16 +40,21 @@ const formSchema = z.object({
 });
 
 const allAddresses = [
-    'Istiklal Avenue, Beyoglu, Istanbul',
-    'Sultanahmet Square, Fatih, Istanbul',
-    'Kadikoy Ferry Terminal, Kadikoy, Istanbul',
-    'Bagdat Avenue, Kadikoy, Istanbul',
-    'Besiktas Square, Besiktas, Istanbul',
-    'Ortakoy Mosque, Besiktas, Istanbul',
-    'Galata Tower, Beyoglu, Istanbul',
-    'Nisantasi, Sisli, Istanbul',
-    'Levent, Besiktas, Istanbul',
-    'Maslak, Sariyer, Istanbul',
+    'Istiklal Avenue, Beyoglu, Istanbul, Turkey',
+    'Sultanahmet Square, Fatih, Istanbul, Turkey',
+    'Kadikoy Ferry Terminal, Kadikoy, Istanbul, Turkey',
+    'Bagdat Avenue, Kadikoy, Istanbul, Turkey',
+    'Besiktas Square, Besiktas, Istanbul, Turkey',
+    'Ortakoy Mosque, Besiktas, Istanbul, Turkey',
+    'Galata Tower, Beyoglu, Istanbul, Turkey',
+    'Nisantasi, Sisli, Istanbul, Turkey',
+    'Levent, Besiktas, Istanbul, Turkey',
+    'Maslak, Sariyer, Istanbul, Turkey',
+    'Uskudar Square, Uskudar, Istanbul, Turkey',
+    'Cihangir, Beyoglu, Istanbul, Turkey',
+    'Bebek, Besiktas, Istanbul, Turkey',
+    'Eminonu Square, Fatih, Istanbul, Turkey',
+    'Grand Bazaar, Fatih, Istanbul, Turkey',
 ];
 
 type CreateOrderFormProps = {
@@ -66,7 +71,6 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
   
   const [pickupSuggestions, setPickupSuggestions] = useState<string[]>([]);
   const [dropoffSuggestions, setDropoffSuggestions] = useState<string[]>([]);
-  const [activeSuggestion, setActiveSuggestion] = useState<'pickup' | 'dropoff' | null>(null);
 
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -82,27 +86,25 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
   
   const handleAddressChange = (value: string, fieldName: 'pickupAddress' | 'dropoffAddress') => {
     form.setValue(fieldName, value);
+    const setter = fieldName === 'pickupAddress' ? setPickupSuggestions : setDropoffSuggestions;
+
     if (value.length > 2) {
-        const filtered = allAddresses.filter(addr => addr.toLowerCase().includes(value.toLowerCase()));
-        if (fieldName === 'pickupAddress') {
-            setPickupSuggestions(filtered);
-            setActiveSuggestion('pickup');
-        } else {
-            setDropoffSuggestions(filtered);
-            setActiveSuggestion('dropoff');
-        }
+        const filtered = allAddresses.filter(addr => 
+            addr.toLowerCase().includes(value.toLowerCase()) && addr.toLowerCase() !== value.toLowerCase()
+        );
+        setter(filtered);
     } else {
-        setPickupSuggestions([]);
-        setDropoffSuggestions([]);
-        setActiveSuggestion(null);
+        setter([]);
     }
   };
 
   const handleSuggestionClick = (suggestion: string, fieldName: 'pickupAddress' | 'dropoffAddress') => {
       form.setValue(fieldName, suggestion, { shouldValidate: true });
-      setPickupSuggestions([]);
-      setDropoffSuggestions([]);
-      setActiveSuggestion(null);
+      if (fieldName === 'pickupAddress') {
+        setPickupSuggestions([]);
+      } else {
+        setDropoffSuggestions([]);
+      }
   };
 
 
@@ -172,15 +174,18 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                             placeholder="e.g., Istiklal Avenue, Beyoglu, Istanbul" 
                             {...field}
                             onChange={e => handleAddressChange(e.target.value, 'pickupAddress')}
-                            onFocus={e => handleAddressChange(e.target.value, 'pickupAddress')}
-                            onBlur={() => setTimeout(() => setActiveSuggestion(null), 150)}
+                            onBlur={() => setTimeout(() => setPickupSuggestions([]), 150)}
                             autoComplete="off"
                         />
                       </FormControl>
-                      {activeSuggestion === 'pickup' && pickupSuggestions.length > 0 && (
+                      {pickupSuggestions.length > 0 && (
                           <div className="absolute z-10 w-full mt-1 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                              {pickupSuggestions.map(s => (
-                                  <div key={s} onMouseDown={() => handleSuggestionClick(s, 'pickupAddress')} className="p-2 text-sm hover:bg-muted cursor-pointer">
+                              {pickupSuggestions.map((s, i) => (
+                                  <div 
+                                      key={`${s}-${i}`} 
+                                      onMouseDown={() => handleSuggestionClick(s, 'pickupAddress')} 
+                                      className="p-2 text-sm hover:bg-muted cursor-pointer"
+                                  >
                                       {s}
                                   </div>
                               ))}
@@ -201,15 +206,18 @@ export default function CreateOrderForm({ onOrderCreated }: CreateOrderFormProps
                             placeholder="e.g., Sultanahmet Square, Fatih, Istanbul" 
                             {...field}
                             onChange={e => handleAddressChange(e.target.value, 'dropoffAddress')}
-                            onFocus={e => handleAddressChange(e.target.value, 'dropoffAddress')}
-                            onBlur={() => setTimeout(() => setActiveSuggestion(null), 150)}
+                            onBlur={() => setTimeout(() => setDropoffSuggestions([]), 150)}
                             autoComplete="off"
                         />
                       </FormControl>
-                       {activeSuggestion === 'dropoff' && dropoffSuggestions.length > 0 && (
+                       {dropoffSuggestions.length > 0 && (
                           <div className="absolute z-10 w-full mt-1 bg-card border rounded-md shadow-lg max-h-48 overflow-y-auto">
-                              {dropoffSuggestions.map(s => (
-                                  <div key={s} onMouseDown={() => handleSuggestionClick(s, 'dropoffAddress')} className="p-2 text-sm hover:bg-muted cursor-pointer">
+                              {dropoffSuggestions.map((s, i) => (
+                                  <div 
+                                      key={`${s}-${i}`}
+                                      onMouseDown={() => handleSuggestionClick(s, 'dropoffAddress')} 
+                                      className="p-2 text-sm hover:bg-muted cursor-pointer"
+                                  >
                                       {s}
                                   </div>
                               ))}

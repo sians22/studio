@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -16,27 +15,19 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Logo } from "./icons";
 import type { Role } from "@/types";
 import { Rocket } from "lucide-react";
 
 const formSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(1, "Password is required"),
-  role: z.enum(["customer", "courier", "admin"]),
 });
 
 export default function LoginPage() {
@@ -46,13 +37,19 @@ export default function LoginPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       username: "",
-      password: "",
-      role: "customer",
     },
   });
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    login(values.username, values.role as Role);
+    const username = values.username.toLowerCase().trim();
+    if (["customer", "courier", "admin"].includes(username)) {
+      login(username, username as Role);
+    } else {
+      form.setError("username", {
+        type: "manual",
+        message: "Please enter 'customer', 'courier', or 'admin'.",
+      });
+    }
   }
 
   return (
@@ -62,8 +59,10 @@ export default function LoginPage() {
           <div className="mx-auto mb-4">
             <Logo />
           </div>
-          <CardTitle>Welcome Back!</CardTitle>
-          <CardDescription>Login to your account to continue</CardDescription>
+          <CardTitle>Welcome!</CardTitle>
+          <CardDescription>
+            Enter a role to log in as a demo user.
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...form}>
@@ -75,43 +74,11 @@ export default function LoginPage() {
                   <FormItem>
                     <FormLabel>Username</FormLabel>
                     <FormControl>
-                      <Input placeholder="e.g. john_doe" {...field} />
+                      <Input placeholder="e.g. customer" {...field} />
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="role"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Role</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a role" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="customer">Customer</SelectItem>
-                        <SelectItem value="courier">Courier</SelectItem>
-                        <SelectItem value="admin">Admin</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <FormDescription>
+                      Type <strong>customer</strong>, <strong>courier</strong>, or <strong>admin</strong> to log in.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
