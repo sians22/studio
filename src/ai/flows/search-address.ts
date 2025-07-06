@@ -37,7 +37,7 @@ const searchAddressFlow = ai.defineFlow(
     const apiKey = process.env.YANDEX_API_KEY;
     if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
         console.error("Yandex API key is not set or is a placeholder in the .env file.");
-        return [];
+        throw new Error("Ключ API Яндекс не настроен. Пожалуйста, получите ключ и добавьте его в файл .env.");
     }
 
     // Bounding box for Chechen Republic: [lon,lat~lon,lat] -> [44.5,42.4~46.8,44.0]

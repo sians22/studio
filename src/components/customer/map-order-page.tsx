@@ -17,7 +17,7 @@ import { Loader2, ArrowLeft, MapPin, Wallet, Phone, MessageSquareText, Rocket } 
 import { cn } from '@/lib/utils';
 
 type OrderStep = 'pickup' | 'dropoff' | 'details' | 'confirm';
-type Address = { text: string; coords: [number, number] };
+type Address = { address: string; coords: [number, number] };
 
 export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () => void }) {
   const { toast } = useToast();
@@ -47,7 +47,10 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
       setIsSearching(true);
       searchAddress({ query: debouncedSearchQuery })
         .then(setSuggestions)
-        .catch(() => toast({ variant: 'destructive', title: 'Ошибка поиска адреса' }))
+        .catch((err) => {
+            console.error(err);
+            toast({ variant: 'destructive', title: 'Ошибка поиска адреса', description: err.message })
+        })
         .finally(() => setIsSearching(false));
     } else {
       setSuggestions([]);
@@ -67,19 +70,29 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     }
   };
 
+  useEffect(() => {
+    if (pickup && dropoff) {
+      handleCalculate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickup, dropoff]);
+
   const handleCalculate = async () => {
     if (!pickup || !dropoff) return;
     setIsLoading(true);
     try {
       const result = await calculateDeliveryPrice({
-        pickupAddress: pickup.text,
-        dropoffAddress: dropoff.text,
+        pickupAddress: pickup.address,
+        dropoffAddress: dropoff.address,
         pricingTiers,
       });
       setPriceInfo(result);
       setStep('details');
-    } catch (error) {
-      toast({ variant: 'destructive', title: 'Ошибка', description: 'Не удалось рассчитать стоимость.' });
+    } catch (error: any) {
+      toast({ variant: 'destructive', title: 'Ошибка', description: error.message || 'Не удалось рассчитать стоимость.' });
+      // Reset if calculation fails
+      setDropoff(null);
+      setStep('dropoff');
     } finally {
       setIsLoading(false);
     }
@@ -93,8 +106,8 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     }
     addOrder({
       customerId: user.id,
-      pickupAddress: pickup.text,
-      dropoffAddress: dropoff.text,
+      pickupAddress: pickup.address,
+      dropoffAddress: dropoff.address,
       senderPhone,
       receiverPhone,
       description,
@@ -114,8 +127,16 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   };
 
   const mapState = useMemo(() => {
+    const boundsOptions = { checkZoomRange: true, zoomMargin: 35 };
     if (priceInfo && priceInfo.routeGeometry.length > 0) {
-      return { bounds: priceInfo.routeGeometry, zoom: undefined, center: undefined };
+      // Create a new map instance to ensure bounds are recalculated
+      if (mapRef.current) {
+        // Use a timeout to allow the DOM to update
+        setTimeout(() => {
+            mapRef.current.setBounds(mapRef.current.geoObjects.getBounds(), boundsOptions);
+        }, 100);
+      }
+      return { center: undefined, zoom: undefined, bounds: undefined };
     }
     if (dropoff) return { center: dropoff.coords, zoom: 15, bounds: undefined };
     if (pickup) return { center: pickup.coords, zoom: 15, bounds: undefined };
@@ -124,8 +145,19 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
 
   const apiKey = process.env.NEXT_PUBLIC_YANDEX_API_KEY;
 
-  if (!apiKey) {
-    return <div className="flex h-full items-center justify-center">Ошибка: Ключ API Яндекс не найден.</div>;
+  if (!apiKey || apiKey === "ВАШ_API_КЛЮЧ_YANDEX_MAPS") {
+    return (
+        <div className="flex h-screen flex-col items-center justify-center p-4 text-center">
+            <Card className="max-w-sm">
+                <CardHeader>
+                    <CardTitle className="text-destructive">Ошибка Конфигурации</CardTitle>
+                    <CardDescription>
+                        Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что `NEXT_PUBLIC_YANDEX_API_KEY` корректно добавлен в ваш `.env` файл.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
+        </div>
+    );
   }
 
   const renderPanelContent = () => {
@@ -141,13 +173,20 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
             <CardContent>
               <div className="flex gap-2">
                 {pickup && (
-                  <div className="flex-1 rounded-md bg-muted p-2 text-sm">
-                    <span className="font-semibold">От:</span> {pickup.text}
+                  <div className="flex-1 cursor-pointer rounded-md bg-muted p-2 text-sm" onClick={() => {
+                      setStep('pickup');
+                      setDropoff(null);
+                      setPriceInfo(null);
+                  }}>
+                    <span className="font-semibold">От:</span> {pickup.address}
                   </div>
                 )}
                 {dropoff && (
-                  <div className="flex-1 rounded-md bg-muted p-2 text-sm">
-                    <span className="font-semibold">До:</span> {dropoff.text}
+                   <div className="flex-1 cursor-pointer rounded-md bg-muted p-2 text-sm" onClick={() => {
+                      setStep('dropoff');
+                      setPriceInfo(null);
+                  }}>
+                    <span className="font-semibold">До:</span> {dropoff.address}
                   </div>
                 )}
               </div>
@@ -164,7 +203,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
                 <div className="mt-2 max-h-48 overflow-y-auto rounded-md border">
                   {suggestions.map((s) => (
                     <div
-                      key={s.coords.join(',')}
+                      key={s.address + s.coords.join(',')}
                       onClick={() => handleSelectAddress(s)}
                       className="cursor-pointer p-2 text-sm hover:bg-muted"
                     >
@@ -174,10 +213,10 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
                 </div>
               )}
             </CardContent>
-            {pickup && dropoff && (
+            {pickup && dropoff && !priceInfo && (
               <CardFooter>
                 <Button className="w-full" onClick={handleCalculate} disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : <Wallet />}
+                  {isLoading ? <Loader2 className="animate-spin" /> : <Wallet className="mr-2"/>}
                   Рассчитать стоимость
                 </Button>
               </CardFooter>
@@ -237,7 +276,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
             </CardContent>
             <CardFooter>
               <Button className="w-full" onClick={handleConfirm} disabled={isLoading}>
-                {isLoading ? <Loader2 className="animate-spin" /> : <Rocket />}
+                {isLoading ? <Loader2 className="animate-spin" /> : <Rocket className="mr-2"/>}
                 Подтвердить и заказать
               </Button>
             </CardFooter>
@@ -248,21 +287,16 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
 
   return (
     <YMaps query={{ apikey: apiKey, lang: 'ru_RU' }}>
-      <div className="relative h-full w-full">
+      <div className="relative h-full w-full" style={{height: "calc(100vh - 73px)"}}>
         <Map
           instanceRef={mapRef}
           state={mapState}
           width="100%"
           height="100%"
           className="absolute inset-0"
-          onLoad={(ymaps: any) => {
-             if (mapRef.current && priceInfo?.routeGeometry) {
-                mapRef.current.setBounds(mapRef.current.geoObjects.getBounds());
-             }
-          }}
         >
-          {pickup && <Placemark geometry={pickup.coords} />}
-          {dropoff && <Placemark geometry={dropoff.coords} />}
+          {pickup && <Placemark geometry={pickup.coords} options={{preset: 'islands#greenDotIconWithCaption'}} properties={{iconCaption: 'Отсюда'}} />}
+          {dropoff && <Placemark geometry={dropoff.coords} options={{preset: 'islands#redDotIconWithCaption'}} properties={{iconCaption: 'Сюда'}} />}
           {priceInfo && priceInfo.routeGeometry.length > 0 && (
             <Polyline
               geometry={priceInfo.routeGeometry}
