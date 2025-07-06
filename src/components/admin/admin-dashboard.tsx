@@ -5,7 +5,7 @@ import { useOrders } from "@/context/order-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DollarSign, Package, Users, Truck } from "lucide-react";
+import { DollarSign, Package, Users, Truck, UserPlus, Edit, ClipboardList, Tag } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import type { Order, Role } from "@/types";
@@ -139,7 +139,10 @@ export default function AdminDashboard() {
         <TabsContent value="orders">
             <Card className="mt-4">
                 <CardHeader>
-                    <CardTitle>Все заказы</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <ClipboardList className="h-5 w-5" />
+                        Все заказы
+                    </CardTitle>
                     <CardDescription>Список всех заказов в системе.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -174,13 +177,19 @@ export default function AdminDashboard() {
         <TabsContent value="users">
             <Card className="mt-4">
                 <CardHeader>
-                    <CardTitle>Управление пользователями</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <Users className="h-5 w-5" />
+                        Управление пользователями
+                    </CardTitle>
                     <CardDescription>Управляйте вашими клиентами и курьерами.</CardDescription>
                 </CardHeader>
                 <CardContent>
                      <AlertDialog open={isUserDialogOpen} onOpenChange={setIsUserDialogOpen}>
                         <AlertDialogTrigger asChild>
-                            <Button>Добавить нового пользователя</Button>
+                            <Button>
+                                <UserPlus className="mr-2 h-4 w-4" />
+                                Добавить нового пользователя
+                            </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
@@ -247,13 +256,19 @@ export default function AdminDashboard() {
         <TabsContent value="pricing">
             <Card className="mt-4">
                 <CardHeader>
-                    <CardTitle>Тарифные планы</CardTitle>
+                    <CardTitle className="flex items-center gap-2">
+                        <Tag className="h-5 w-5" />
+                        Тарифные планы
+                    </CardTitle>
                     <CardDescription>Установите цены на доставку в зависимости от расстояния. Эти цены используются ИИ для расчета стоимости.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <AlertDialog open={isPricingDialogOpen} onOpenChange={setIsPricingDialogOpen}>
                         <AlertDialogTrigger asChild>
-                            <Button>Редактировать цены</Button>
+                            <Button>
+                                <Edit className="mr-2 h-4 w-4" />
+                                Редактировать цены
+                            </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
