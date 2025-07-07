@@ -14,7 +14,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowLeft, MapPin, Wallet, Phone, MessageSquareText, Rocket, Move, CheckCircle, X } from 'lucide-react';
+import { Loader2, ArrowLeft, MapPin, Wallet, Phone, MessageSquareText, Rocket, Move, CheckCircle, X, LocateFixed } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 
@@ -54,6 +54,8 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   const [isLoading, setIsLoading] = useState(false); // For price calculation and reverse geocoding
   const [isPlacemarkDragging, setIsPlacemarkDragging] = useState(false);
   const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isGettingLocation, setIsGettingLocation] = useState(false);
+
 
   const mapRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +73,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   }, [debouncedSearchQuery, toast]);
   
   const handleMapClick = async (e: any) => {
-    if (isLoading || isPlacemarkDragging) return;
+    if (isLoading || isPlacemarkDragging || isGettingLocation) return;
     const coords: [number, number] = e.get('coords');
     if (!coords) return;
 
@@ -104,6 +106,40 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     setSearchQuery('');
     setSuggestions([]);
     inputRef.current?.focus();
+  };
+
+  const handleGetMyLocation = () => {
+    if (!navigator.geolocation) {
+        toast({ variant: 'destructive', title: 'Геолокация не поддерживается', description: 'Ваш браузер не поддерживает определение местоположения.' });
+        return;
+    }
+
+    setIsGettingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const coords: [number, number] = [position.coords.latitude, position.coords.longitude];
+            try {
+                const result = await getAddressFromCoords({ coords });
+                if (result) {
+                    handleSelectAddress(result);
+                } else {
+                    toast({ variant: 'destructive', title: 'Адрес не найден', description: 'Не удалось определить адрес для вашего местоположения.' });
+                }
+            } catch (err: any) {
+                toast({ variant: 'destructive', title: 'Ошибка определения адреса', description: err.message });
+            } finally {
+                setIsGettingLocation(false);
+            }
+        },
+        (error) => {
+            let message = 'Не удалось получить ваше местоположение.';
+            if (error.code === error.PERMISSION_DENIED) {
+                message = 'Вы запретили доступ к своему местоположению.';
+            }
+            toast({ variant: 'destructive', title: 'Ошибка геолокации', description: message });
+            setIsGettingLocation(false);
+        }
+    );
   };
 
   useEffect(() => {
@@ -189,7 +225,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   
   const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY;
 
-  if (!apiKey) {
+  if (!apiKey || apiKey === 'YOUR_YANDEX_MAP_API_KEY_HERE') {
     return (
         <div className="flex h-screen flex-col items-center justify-center p-4 text-center">
             <Card className="max-w-sm"><CardHeader><CardTitle className="text-destructive">Ошибка Конфигурации</CardTitle><CardDescription>Ключ API Яндекс Карт не настроен в `.env` файле.</CardDescription></CardHeader></Card>
@@ -324,12 +360,24 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
           state={mapState}
           width="100%"
           height="100%"
-          className={cn("absolute inset-0", (isLoading) && "cursor-wait")}
+          className={cn("absolute inset-0", (isLoading || isGettingLocation) && "cursor-wait")}
           onClick={handleMapClick}
         >
           {pickup && <Placemark geometry={pickup.coords} options={{preset: 'islands#greenDotIconWithCaption', draggable: true, iconCaption: 'Отсюда'}} onDragStart={() => setIsPlacemarkDragging(true)} onDragEnd={(e) => handlePlacemarkDrag(e, 'pickup')} />}
           {dropoff && <Placemark geometry={dropoff.coords} options={{preset: 'islands#redDotIconWithCaption', draggable: true, iconCaption: 'Сюда'}} onDragStart={() => setIsPlacemarkDragging(true)} onDragEnd={(e) => handlePlacemarkDrag(e, 'dropoff')} />}
         </Map>
+        
+        <Button
+            size="icon"
+            variant="secondary"
+            className="pointer-events-auto absolute top-4 right-4 z-10 shadow-lg"
+            onClick={handleGetMyLocation}
+            disabled={isGettingLocation || isLoading}
+            title="Мое местоположение"
+        >
+            {isGettingLocation ? <Loader2 className="h-5 w-5 animate-spin" /> : <LocateFixed className="h-5 w-5" />}
+            <span className="sr-only">Мое местоположение</span>
+        </Button>
 
         {isPlacemarkDragging && (
             <div className="absolute top-1/2 left-1/2 z-20 -translate-x-1/2 -translate-y-1/2 transform rounded-lg bg-background/80 p-4 shadow-lg backdrop-blur-sm">
