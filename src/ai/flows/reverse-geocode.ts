@@ -43,7 +43,8 @@ const reverseGeocodeFlow = ai.defineFlow(
     
     // Yandex geocoder expects lon,lat for coordinates
     const [lat, lon] = coords;
-    const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${lon},${lat}&format=json&lang=ru_RU&results=1`;
+    // Added `kind=house` to get the most precise address possible
+    const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${lon},${lat}&format=json&lang=ru_RU&results=1&kind=house`;
     
     try {
       const response = await fetch(url);

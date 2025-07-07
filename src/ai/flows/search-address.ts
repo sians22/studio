@@ -42,8 +42,10 @@ const searchAddressFlow = ai.defineFlow(
         throw new Error("Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что NEXT_PUBLIC_YANDEX_MAP_API_KEY задан в .env и имеет права на 'JavaScript API and HTTP Geocoder'.");
     }
 
-    // Worldwide search, results are prioritized by Yandex based on relevance and language.
-    const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${encodeURIComponent(query)}&format=json&lang=ru_RU&results=20`;
+    // Biasing search to Grozny area for more relevant results
+    const groznyCenter = '45.7,43.3'; // lon,lat for Grozny
+    const searchSpan = '0.5,0.5';     // Approx. 50km x 50km
+    const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${encodeURIComponent(query)}&format=json&lang=ru_RU&results=20&ll=${groznyCenter}&spn=${searchSpan}&rspn=1`;
     
     try {
       const response = await fetch(url);
