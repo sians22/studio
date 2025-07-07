@@ -79,7 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const newUser: User = {
       id: `user-${Date.now()}`,
       hwid: deviceHwid,
-      username: `Kullanıcı ${deviceHwid.substring(0, 4)}`,
+      username: `Пользователь ${deviceHwid.substring(0, 4)}`,
       role: 'customer',
     };
     setUsers(prevUsers => [...prevUsers, newUser]);

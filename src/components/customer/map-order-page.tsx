@@ -18,7 +18,6 @@ import { Loader2, ArrowLeft, MapPin, Wallet, Phone, MessageSquareText, Rocket, M
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 
-type OrderStep = 'addresses' | 'details' | 'confirmed';
 type AddressFocus = 'pickup' | 'dropoff';
 type Address = { address: string; coords: [number, number]; kind?: string };
 
@@ -36,8 +35,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   const { addOrder } = useOrders();
   const { user } = useAuth();
   const { tiers: pricingTiers } = usePricing();
-
-  const [step, setStep] = useState<OrderStep>('addresses');
+  
   const [addressFocus, setAddressFocus] = useState<AddressFocus>('pickup');
 
   const [pickup, setPickup] = useState<Address | null>(null);
@@ -53,9 +51,9 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   const [suggestions, setSuggestions] = useState<SearchAddressOutput>([]);
 
   const [isSearching, setIsSearching] = useState(false);
-  const [isLoading, setIsLoading] = useState(false); // For price calculation
-  const [isReverseGeocoding, setIsReverseGeocoding] = useState(false);
+  const [isLoading, setIsLoading] = useState(false); // For price calculation and reverse geocoding
   const [isPlacemarkDragging, setIsPlacemarkDragging] = useState(false);
+  const [isConfirmed, setIsConfirmed] = useState(false);
 
   const mapRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -73,11 +71,11 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   }, [debouncedSearchQuery, toast]);
   
   const handleMapClick = async (e: any) => {
-    if (isReverseGeocoding || isLoading || isPlacemarkDragging) return;
+    if (isLoading || isPlacemarkDragging) return;
     const coords: [number, number] = e.get('coords');
     if (!coords) return;
 
-    setIsReverseGeocoding(true);
+    setIsLoading(true);
     try {
       const result = await getAddressFromCoords({ coords });
       if (result) {
@@ -88,7 +86,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     } catch (err: any) {
       toast({ variant: 'destructive', title: 'Ошибка определения адреса', description: err.message });
     } finally {
-      setIsReverseGeocoding(false);
+      setIsLoading(false);
     }
   };
 
@@ -96,6 +94,10 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     if (addressFocus === 'pickup') {
       setPickup(address);
       setAddressFocus('dropoff');
+      if (dropoff) { // if dropoff exists, recalculate
+          setDropoff(null);
+          setPriceInfo(null);
+      }
     } else {
       setDropoff(address);
     }
@@ -120,11 +122,10 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
           pricingTiers,
         });
         setPriceInfo(result);
-        setStep('details');
       } catch (error: any) {
         toast({ variant: 'destructive', title: 'Ошибка расчета маршрута', description: error.message, duration: 9000 });
-        setDropoff(null); // Reset dropoff on error to allow re-selection
-        setStep('addresses');
+        setDropoff(null);
+        setPriceInfo(null);
         setAddressFocus('dropoff');
       } finally {
         setIsLoading(false);
@@ -149,7 +150,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
       price: priceInfo.priceTl,
       distance: priceInfo.distanceKm,
     });
-    setStep('confirmed');
+    setIsConfirmed(true);
   };
 
   const handlePlacemarkDrag = async (e: any, pointType: 'pickup' | 'dropoff') => {
@@ -157,7 +158,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     setPriceInfo(null);
     const newCoords = e.get('target').geometry.getCoordinates();
     
-    setIsReverseGeocoding(true);
+    setIsLoading(true);
     try {
         const result = await getAddressFromCoords({ coords: newCoords });
         if (result) {
@@ -165,24 +166,26 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
             else setDropoff(result);
         } else {
             toast({ variant: 'destructive', title: 'Адрес не найден' });
+             if (pointType === 'pickup') setPickup(null);
+             else setDropoff(null);
         }
     } catch (error: any) {
         toast({ variant: 'destructive', title: 'Ошибка', description: error.message });
     } finally {
-        setIsReverseGeocoding(false);
+        setIsLoading(false);
     }
   }
   
   const mapState = useMemo(() => {
     const boundsOptions = { checkZoomRange: true, zoomMargin: 35 };
-    if (priceInfo) {
-      if (mapRef.current) setTimeout(() => mapRef.current.setBounds(mapRef.current.geoObjects.getBounds(), boundsOptions), 100);
-      return { center: undefined, zoom: undefined, bounds: undefined };
+    if (pickup && dropoff) {
+      if (mapRef.current) setTimeout(() => mapRef.current.setBounds([pickup.coords, dropoff.coords], boundsOptions), 100);
+      return { center: undefined, zoom: undefined, bounds: [pickup.coords, dropoff.coords] };
     }
     if (dropoff) return { center: dropoff.coords, zoom: 15, bounds: undefined };
     if (pickup) return { center: pickup.coords, zoom: 15, bounds: undefined };
     return { center: [43.318, 45.698], zoom: 12, bounds: undefined };
-  }, [pickup, dropoff, priceInfo]);
+  }, [pickup, dropoff]);
   
   const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY;
 
@@ -194,121 +197,123 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
     );
   }
 
-  const renderAddressesStep = () => (
-    <>
-      <CardHeader>
-        <CardTitle>Создать заказ</CardTitle>
-        <CardDescription>Укажите адреса отправления и назначения.</CardDescription>
-      </CardHeader>
-      <CardContent className="flex-1 space-y-2 overflow-y-auto">
-        <div 
-          className={cn("flex items-center gap-3 rounded-md border p-2 cursor-pointer", addressFocus === 'pickup' && 'ring-2 ring-primary')}
-          onClick={() => setAddressFocus('pickup')}
-        >
-          <MapPin className="h-5 w-5 text-green-500" />
-          <div className="flex-1 text-sm">{pickup ? pickup.address : <span className="text-muted-foreground">Откуда?</span>}</div>
-          {pickup && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setPickup(null); setPriceInfo(null); setStep('addresses');}}><X className="h-4 w-4"/></Button>}
-        </div>
-        <div 
-          className={cn("flex items-center gap-3 rounded-md border p-2 cursor-pointer", addressFocus === 'dropoff' && 'ring-2 ring-primary')}
-          onClick={() => setAddressFocus('dropoff')}
-        >
-          <MapPin className="h-5 w-5 text-red-500" />
-          <div className="flex-1 text-sm">{dropoff ? dropoff.address : <span className="text-muted-foreground">Куда?</span>}</div>
-          {dropoff && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDropoff(null); setPriceInfo(null); setStep('addresses');}}><X className="h-4 w-4"/></Button>}
-        </div>
+  const renderPanel = () => {
+    if (isConfirmed) {
+         return (
+             <div className="flex flex-col items-center justify-center h-full text-center p-6">
+                <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+                <h2 className="text-2xl font-bold mb-2">Заказ создан!</h2>
+                <p className="text-muted-foreground mb-6">Ваш заказ успешно размещен. Курьер будет назначен в ближайшее время.</p>
+                <Button className="w-full" onClick={onOrderCreated}>К моим заказам</Button>
+            </div>
+         );
+    }
+    
+    if (priceInfo) {
+         return (
+            <>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                   <Button variant="ghost" size="icon" onClick={() => { setPriceInfo(null); setDropoff(null); setAddressFocus('dropoff'); }}>
+                        <ArrowLeft />
+                   </Button>
+                   <CardTitle>Подтверждение заказа</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="flex-1 space-y-4 overflow-y-auto">
+                <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                  <div>
+                    <div className="text-sm text-muted-foreground">Расстояние</div>
+                    <div className="font-bold">{priceInfo?.distanceKm} km</div>
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Цена</div>
+                    <div className="text-2xl font-bold text-primary">{priceInfo?.priceTl} руб.</div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">{priceInfo?.pricingDetails}</p>
+                
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2"><label className="text-sm font-medium">Телефон отправителя</label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={senderPhone} onChange={e => setSenderPhone(e.target.value)} className="pl-10" /></div></div>
+                  <div className="space-y-2"><label className="text-sm font-medium">Телефон получателя</label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={receiverPhone} onChange={e => setReceiverPhone(e.target.value)} className="pl-10" /></div></div>
+                </div>
+                <div className="space-y-2"><label className="text-sm font-medium">Примечание (необязательно)</label><div className="relative"><MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Textarea placeholder="Что-то важное..." value={description} onChange={e => setDescription(e.target.value)} className="pl-10" /></div></div>
+              </CardContent>
+              <CardFooter>
+                <Button className="w-full" onClick={handleConfirmOrder} disabled={isLoading}>
+                  {isLoading ? <Loader2 className="animate-spin" /> : <Rocket className="mr-2"/> }
+                  Подтвердить и заказать
+                </Button>
+              </CardFooter>
+            </>
+         );
+    }
+    
+    return (
+        <>
+            <CardHeader>
+                <CardTitle>Создать заказ</CardTitle>
+                <CardDescription>Укажите адреса отправления и назначения.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex-1 space-y-2 overflow-y-auto">
+                <div 
+                    className={cn("flex items-center gap-3 rounded-md border p-2 cursor-pointer", addressFocus === 'pickup' && 'ring-2 ring-primary')}
+                    onClick={() => setAddressFocus('pickup')}
+                >
+                    <MapPin className="h-5 w-5 text-green-500" />
+                    <div className="flex-1 text-sm">{pickup ? pickup.address : <span className="text-muted-foreground">Откуда?</span>}</div>
+                    {pickup && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setPickup(null); setPriceInfo(null); setDropoff(null); setAddressFocus('pickup');}}><X className="h-4 w-4"/></Button>}
+                </div>
+                <div 
+                    className={cn("flex items-center gap-3 rounded-md border p-2 cursor-pointer", addressFocus === 'dropoff' && 'ring-2 ring-primary')}
+                    onClick={() => setAddressFocus('dropoff')}
+                >
+                    <MapPin className="h-5 w-5 text-red-500" />
+                    <div className="flex-1 text-sm">{dropoff ? dropoff.address : <span className="text-muted-foreground">Куда?</span>}</div>
+                    {dropoff && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDropoff(null); setPriceInfo(null); setAddressFocus('dropoff');}}><X className="h-4 w-4"/></Button>}
+                </div>
 
-        <div className="relative pt-2">
-            <Input
-                ref={inputRef}
-                placeholder="Поиск по адресу..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                disabled={!addressFocus}
-            />
-            {(isSearching || isReverseGeocoding) && <Loader2 className="absolute right-3 top-[18px] h-4 w-4 animate-spin text-muted-foreground" />}
-        </div>
-        
-        {suggestions.length > 0 && (
-          <div className="mt-2 max-h-48 overflow-y-auto rounded-md border">
-            {Object.entries(suggestions.reduce((acc: Record<string, SearchAddressOutput>, suggestion) => {
-                const kindKey = suggestion.kind || 'other';
-                const kind = KIND_TRANSLATIONS[kindKey] || KIND_TRANSLATIONS['other'];
-                if (!acc[kind]) acc[kind] = [];
-                acc[kind].push(suggestion);
-                return acc;
-            }, {})).map(([kind, items]) => (
-                <div key={kind}>
-                    <p className="p-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">{kind}</p>
-                    {items.map((s) => (
-                        <div key={s.address + s.coords.join(',')} onClick={() => handleSelectAddress(s)} className="cursor-pointer p-2 pl-4 text-sm hover:bg-muted">
-                          {s.address}
+                <div className="relative pt-2">
+                    <Input
+                        ref={inputRef}
+                        placeholder={addressFocus === 'pickup' ? "Поиск адреса отправления..." : "Поиск адреса назначения..."}
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                    />
+                    {(isSearching || isLoading) && <Loader2 className="absolute right-3 top-[18px] h-4 w-4 animate-spin text-muted-foreground" />}
+                </div>
+                
+                {suggestions.length > 0 && (
+                <div className="mt-2 max-h-48 overflow-y-auto rounded-md border">
+                    {Object.entries(suggestions.reduce((acc: Record<string, SearchAddressOutput>, suggestion) => {
+                        const kindKey = suggestion.kind || 'other';
+                        const kind = KIND_TRANSLATIONS[kindKey] || KIND_TRANSLATIONS['other'];
+                        if (!acc[kind]) acc[kind] = [];
+                        acc[kind].push(suggestion);
+                        return acc;
+                    }, {})).map(([kind, items]) => (
+                        <div key={kind}>
+                            <p className="p-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">{kind}</p>
+                            {items.map((s) => (
+                                <div key={s.address + s.coords.join(',')} onClick={() => handleSelectAddress(s)} className="cursor-pointer p-2 pl-4 text-sm hover:bg-muted">
+                                {s.address}
+                                </div>
+                            ))}
                         </div>
                     ))}
                 </div>
-            ))}
-          </div>
-        )}
-      </CardContent>
-    </>
-  );
-
-  const renderDetailsStep = () => (
-    <>
-      <CardHeader>
-        <div className="flex items-center gap-2">
-           <Button variant="ghost" size="icon" onClick={() => { setPriceInfo(null); setStep('addresses'); setDropoff(null); }}>
-                <ArrowLeft />
-           </Button>
-           <CardTitle>Детали заказа</CardTitle>
-        </div>
-      </CardHeader>
-      <CardContent className="flex-1 space-y-4 overflow-y-auto">
-        <div className="flex items-center justify-between rounded-lg bg-muted p-3">
-          <div>
-            <div className="text-sm text-muted-foreground">Расстояние</div>
-            <div className="font-bold">{priceInfo?.distanceKm} km</div>
-          </div>
-          <div>
-            <div className="text-sm text-muted-foreground">Цена</div>
-            <div className="text-2xl font-bold text-primary">{priceInfo?.priceTl} руб.</div>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground">{priceInfo?.pricingDetails}</p>
-        
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          <div className="space-y-2"><label className="text-sm font-medium">Телефон отправителя</label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={senderPhone} onChange={e => setSenderPhone(e.target.value)} className="pl-10" /></div></div>
-          <div className="space-y-2"><label className="text-sm font-medium">Телефон получателя</label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={receiverPhone} onChange={e => setReceiverPhone(e.target.value)} className="pl-10" /></div></div>
-        </div>
-        <div className="space-y-2"><label className="text-sm font-medium">Примечание (необязательно)</label><div className="relative"><MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Textarea placeholder="Что-то важное..." value={description} onChange={e => setDescription(e.target.value)} className="pl-10" /></div></div>
-      </CardContent>
-      <CardFooter>
-        <Button className="w-full" onClick={handleConfirmOrder} disabled={isLoading}>
-          <Rocket className="mr-2"/>Подтвердить и заказать
-        </Button>
-      </CardFooter>
-    </>
-  );
-
-  const renderConfirmedStep = () => (
-      <div className="flex flex-col items-center justify-center h-full text-center p-6">
-          <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-          <h2 className="text-2xl font-bold mb-2">Заказ создан!</h2>
-          <p className="text-muted-foreground mb-6">Ваш заказ успешно размещен. Курьер будет назначен в ближайшее время.</p>
-          <Button className="w-full" onClick={onOrderCreated}>К моим заказам</Button>
-      </div>
-  )
-
-  const renderContent = () => {
-    if (isLoading) {
-      return <div className="flex h-full items-center justify-center p-6"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
-    }
-    switch (step) {
-        case 'addresses': return renderAddressesStep();
-        case 'details': return renderDetailsStep();
-        case 'confirmed': return renderConfirmedStep();
-        default: return null;
-    }
+                )}
+            </CardContent>
+             {isLoading && (
+                <CardFooter>
+                    <div className="flex items-center justify-center w-full text-muted-foreground">
+                        <Loader2 className="h-5 w-5 animate-spin mr-2"/>
+                        <span>Расчет маршрута...</span>
+                    </div>
+                </CardFooter>
+            )}
+        </>
+    )
   }
 
   return (
@@ -319,12 +324,11 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
           state={mapState}
           width="100%"
           height="100%"
-          className={cn("absolute inset-0", (isReverseGeocoding || isLoading) && "cursor-wait")}
+          className={cn("absolute inset-0", (isLoading) && "cursor-wait")}
           onClick={handleMapClick}
         >
           {pickup && <Placemark geometry={pickup.coords} options={{preset: 'islands#greenDotIconWithCaption', draggable: true, iconCaption: 'Отсюда'}} onDragStart={() => setIsPlacemarkDragging(true)} onDragEnd={(e) => handlePlacemarkDrag(e, 'pickup')} />}
           {dropoff && <Placemark geometry={dropoff.coords} options={{preset: 'islands#redDotIconWithCaption', draggable: true, iconCaption: 'Сюда'}} onDragStart={() => setIsPlacemarkDragging(true)} onDragEnd={(e) => handlePlacemarkDrag(e, 'dropoff')} />}
-          {isReverseGeocoding && <Placemark geometry={mapState.center} options={{ preset: 'islands#circleIcon', iconColor: '#ff8a00' }} />}
         </Map>
 
         {isPlacemarkDragging && (
@@ -333,13 +337,13 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
             </div>
         )}
         
-        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-between p-2 md:items-start md:p-4">
+        <div className="pointer-events-none absolute inset-0 flex flex-col justify-end p-2 md:items-start md:justify-start md:p-4">
             <Button variant="secondary" onClick={onOrderCreated} className="pointer-events-auto absolute top-2 left-2 z-10 md:hidden">
               <ArrowLeft />
             </Button>
-             <div className={cn("pointer-events-auto w-full max-w-md self-end md:self-start md:h-full md:max-h-[95vh] md:w-96", isPlacemarkDragging && 'opacity-30')}>
-                 <Card className="flex flex-col h-full">
-                    {renderContent()}
+             <div className={cn("pointer-events-auto w-full max-w-md self-center md:self-start md:max-h-[calc(95vh)]", isPlacemarkDragging && 'opacity-30')}>
+                 <Card className="flex flex-col max-h-[70vh] md:max-h-[90vh]">
+                    {renderPanel()}
                  </Card>
             </div>
         </div>
