@@ -6,12 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Package, PlusCircle, MapPin, MessageSquareText } from "lucide-react";
 import MapOrderPage from "./map-order-page";
-import AiOrderPage from "./ai-order-page";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import type { OrderStatus } from "@/types";
-
+import Image from "next/image";
 
 type CustomerDashboardProps = {
   activeTab: string;
@@ -46,10 +45,6 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
     return <MapOrderPage onOrderCreated={() => setActiveTab('home')} />;
   }
 
-  if (activeTab === 'ai-create') {
-    return <AiOrderPage onOrderCreated={() => setActiveTab('home')} />;
-  }
-
   return (
     <div className="container mx-auto max-w-2xl">
       {customerOrders.length === 0 ? (
@@ -71,60 +66,67 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
         </div>
       ) : (
         <div className="space-y-4 p-4 md:space-y-6">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold">Мои заказы</h1>
+            <Button onClick={() => setActiveTab('create')}>
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Новый заказ
+            </Button>
+          </div>
           {customerOrders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
+            <Card key={order.id} className="overflow-hidden">
+              <CardHeader className="flex flex-row items-start justify-between bg-muted/30 p-4">
                   <div>
-                    <CardTitle>Заказ #{order.id.slice(-6)}</CardTitle>
+                    <Badge variant={getStatusVariant(order.status)} className="capitalize mb-2">
+                      {order.status}
+                    </Badge>
+                    <CardTitle className="text-lg">Заказ #{order.id.slice(-6)}</CardTitle>
                     <CardDescription>
                       {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ru })}
                     </CardDescription>
                   </div>
-                  <Badge variant={getStatusVariant(order.status)} className="capitalize">
-                    {order.status}
-                  </Badge>
-                </div>
+                  <div className="text-right">
+                      <p className="text-xl font-bold text-primary">{order.price} руб.</p>
+                      <p className="text-sm text-muted-foreground">{order.distance} km</p>
+                  </div>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-green-500" />
-                    <div className="text-sm">
-                      <p className="font-medium">Откуда</p>
-                      <p className="text-muted-foreground">{order.pickupAddress}</p>
+              <CardContent className="space-y-4 p-4">
+                <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 mt-1 flex-shrink-0 text-green-500" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Откуда</p>
+                      <p className="font-semibold">{order.pickupAddress}</p>
                     </div>
-                  </div>
                 </div>
-                <div>
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-red-500" />
-                    <div className="text-sm">
-                      <p className="font-medium">Куда</p>
-                      <p className="text-muted-foreground">{order.dropoffAddress}</p>
+                <div className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 mt-1 flex-shrink-0 text-red-500" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Куда</p>
+                      <p className="font-semibold">{order.dropoffAddress}</p>
                     </div>
-                  </div>
                 </div>
-                {order.description && (
-                  <div className="flex items-start gap-3 border-t pt-4">
-                    <MessageSquareText className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">{order.description}</p>
+                 {order.description && (
+                  <div className="flex items-start gap-3 border-t pt-3 mt-3">
+                    <MessageSquareText className="h-5 w-5 mt-1 flex-shrink-0 text-muted-foreground" />
+                     <div>
+                       <p className="text-sm font-medium text-muted-foreground">Примечание</p>
+                       <p className="text-sm">{order.description}</p>
+                     </div>
                   </div>
                 )}
               </CardContent>
-              <CardFooter className="flex items-center justify-between bg-muted/50 p-4">
-                <p className="text-lg font-bold">{order.price} руб.</p>
                 {!['Доставлен', 'Отменен'].includes(order.status) && (
-                  <Button
-                    variant="ghost"
-                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    onClick={() => handleCancelOrder(order.id)}
-                    size="sm"
-                  >
-                    Отменить заказ
-                  </Button>
+                  <CardFooter className="bg-muted/30 p-2">
+                    <Button
+                      variant="ghost"
+                      className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      onClick={() => handleCancelOrder(order.id)}
+                      size="sm"
+                    >
+                      Отменить заказ
+                    </Button>
+                  </CardFooter>
                 )}
-              </CardFooter>
             </Card>
           ))}
         </div>
