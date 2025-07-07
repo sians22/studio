@@ -49,6 +49,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [suggestions, setSuggestions] = useState<SearchAddressOutput>([]);
+  const [noResults, setNoResults] = useState(false);
 
   const [isSearching, setIsSearching] = useState(false);
   const [isLoading, setIsLoading] = useState(false); // For price calculation and reverse geocoding
@@ -63,12 +64,20 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     if (debouncedSearchQuery) {
       setIsSearching(true);
+      setSuggestions([]); // Clear old suggestions immediately
+      setNoResults(false);  // Reset no results state
       searchAddress({ query: debouncedSearchQuery })
-        .then(setSuggestions)
+        .then(results => {
+          setSuggestions(results);
+          if (results.length === 0) {
+            setNoResults(true); // Set no results if API returns empty
+          }
+        })
         .catch((err) => toast({ variant: 'destructive', title: 'Ошибка поиска адреса', description: err.message }))
         .finally(() => setIsSearching(false));
     } else {
       setSuggestions([]);
+      setNoResults(false); // Clear everything if query is empty
     }
   }, [debouncedSearchQuery, toast]);
   
@@ -316,7 +325,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                     />
-                    {(isSearching || isLoading) && <Loader2 className="absolute right-3 top-[18px] h-4 w-4 animate-spin text-muted-foreground" />}
+                    {isSearching && <Loader2 className="absolute right-3 top-[18px] h-4 w-4 animate-spin text-muted-foreground" />}
                 </div>
                 
                 {suggestions.length > 0 && (
@@ -338,6 +347,11 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                         </div>
                     ))}
                 </div>
+                )}
+                {noResults && !isSearching && (
+                    <div className="mt-2 text-center text-sm text-muted-foreground p-4 border rounded-md">
+                        По вашему запросу ничего не найдено.
+                    </div>
                 )}
             </CardContent>
              {isLoading && (
