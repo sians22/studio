@@ -12,19 +12,45 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import type { PricingTier } from '@/context/pricing-context';
 
+
+/**
+ * Calculates the straight-line (haversine) distance between two points on Earth.
+ * @param coords1 - [lat, lon] for the first point.
+ * @param coords2 - [lat, lon] for the second point.
+ * @returns The distance in kilometers.
+ */
+function haversineDistance(coords1: [number, number], coords2: [number, number]): number {
+  const R = 6371; // Radius of the Earth in km
+  const dLat = (coords2[0] - coords1[0]) * Math.PI / 180;
+  const dLon = (coords2[1] - coords1[1]) * Math.PI / 180;
+  const lat1 = coords1[0] * Math.PI / 180;
+  const lat2 = coords2[0] * Math.PI / 180;
+
+  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+}
+
+
 // Helper function to get route distance from Yandex Maps Directions API
-async function getRouteDistance(startCoords: [number, number], endCoords: [number, number]): Promise<number> {
+async function getRouteDistance(startCoords: [number, number], endCoords: [number, number]): Promise<{distance: number, isEstimate: boolean}> {
     const apiKey = process.env.YANDEX_ROUTING_API_KEY; // Use the dedicated, server-side routing key
-     if (!apiKey || apiKey === "YOUR_YANDEX_ROUTING_API_KEY_HERE") {
-        console.error("Yandex ROUTING API key is not set in the .env file.");
-        throw new Error("Ключ API Яндекс Маршрутов не настроен. Пожалуйста, убедитесь, что YANDEX_ROUTING_API_KEY задан в .env и имеет права на 'Directions API'.");
+    
+    // If no routing key is provided, fall back to an estimated straight-line distance
+    if (!apiKey || apiKey === "YOUR_YANDEX_ROUTING_API_KEY_HERE") {
+        console.warn("Yandex ROUTING API key is not set. Falling back to straight-line distance calculation.");
+        // A common "circuity factor" is between 1.1 and 1.5. Let's use 1.3 to make it more realistic.
+        const distance = haversineDistance(startCoords, endCoords) * 1.3; 
+        return { distance: distance, isEstimate: true };
     }
-    // Yandex Directions API expects lon,lat format for waypoints
+
     const waypoints = `${startCoords[1]},${startCoords[0]}|${endCoords[1]},${endCoords[0]}`;
     const url = `https://api.routing.yandex.net/v2/route?apikey=${apiKey}&waypoints=${waypoints}&mode=driving`;
-     try {
+
+    try {
         const response = await fetch(url);
-        const data = await response.json(); // Read JSON regardless of status
+        const data = await response.json();
 
         if (!response.ok) {
             console.error("Yandex Directions API error response:", JSON.stringify(data, null, 2));
@@ -51,8 +77,7 @@ async function getRouteDistance(startCoords: [number, number], endCoords: [numbe
         }
         
         const distanceMeters = route.summary?.distance?.value;
-
-        return distanceMeters ? distanceMeters / 1000 : 0; // Convert meters to km
+        return { distance: distanceMeters ? distanceMeters / 1000 : 0, isEstimate: false };
     } catch (error) {
         console.error("Routing error:", error);
         if (error instanceof Error) {
@@ -118,11 +143,11 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
         throw new Error('Не удалось получить координаты для одного или обоих адресов.');
     }
 
-    const rawDistanceKm = await getRouteDistance(pickupCoords, dropoffCoords);
+    const { distance: rawDistanceKm, isEstimate } = await getRouteDistance(pickupCoords, dropoffCoords);
     
     const distanceKm = parseFloat(rawDistanceKm.toFixed(2));
 
-    // --- Price calculation logic without Gemini ---
+    // --- Price calculation logic ---
     let calculatedPrice = 0;
     let matchedTier: PricingTier | null = null;
 
@@ -138,18 +163,22 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
     }
     
     let pricingDetails = '';
+
+    if (isEstimate) {
+        pricingDetails += '(Приблизительно) ';
+    }
+
     if (matchedTier) {
-        pricingDetails = `Расстояние ${distanceKm} км соответствует тарифу "${matchedTier.range}", поэтому стоимость составляет ${calculatedPrice} руб.`;
+        pricingDetails += `Расстояние ${distanceKm} км соответствует тарифу "${matchedTier.range}", поэтому стоимость составляет ${calculatedPrice} руб.`;
     } else {
          const highestTier = sortedTiers[sortedTiers.length - 1];
         if (highestTier) {
             calculatedPrice = highestTier.price;
-            pricingDetails = `Расстояние ${distanceKm} км превышает максимальный тариф, применяется цена "${highestTier.range}": ${calculatedPrice} руб.`;
+            pricingDetails += `Расстояние ${distanceKm} км превышает максимальный тариф, применяется цена "${highestTier.range}": ${calculatedPrice} руб.`;
         } else {
-             pricingDetails = 'Для данного расстояния не найден подходящий тариф.';
+             pricingDetails += 'Для данного расстояния не найден подходящий тариф.';
         }
     }
-    // --- End of price calculation logic ---
     
     return {
         distanceKm: distanceKm,
