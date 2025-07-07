@@ -9,7 +9,7 @@ import { processChat, ConversationalOrderOutput } from '@/ai/flows/conversationa
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, Wand2, Send, User, Bot, MapPin, Wallet } from 'lucide-react';
+import { Loader2, Wand2, Send, User, Bot, MapPin, CheckCircle } from 'lucide-react';
 
 type ChatMessage = {
   role: 'user' | 'model';
@@ -47,7 +47,9 @@ export default function AiOrderPage({ onOrderCreated }: { onOrderCreated: () => 
             setIsLoading(false);
         }
     };
-    getInitialMessage();
+    if (pricingTiers.length > 0) {
+      getInitialMessage();
+    }
   }, [pricingTiers, toast]);
 
 
@@ -100,7 +102,8 @@ export default function AiOrderPage({ onOrderCreated }: { onOrderCreated: () => 
      return (
         <div className="container mx-auto max-w-2xl p-4 flex flex-col items-center justify-center h-full">
              <Card className="w-full max-w-md">
-                <CardHeader>
+                <CardHeader className="items-center text-center">
+                    <CheckCircle className="w-12 h-12 text-green-500" />
                     <CardTitle>Заказ успешно размещен!</CardTitle>
                     <CardDescription>Спасибо! Ваш заказ был создан и скоро будет назначен курьер.</CardDescription>
                 </CardHeader>
@@ -138,7 +141,7 @@ export default function AiOrderPage({ onOrderCreated }: { onOrderCreated: () => 
 
 
   return (
-    <div className="container mx-auto max-w-2xl p-4 flex flex-col h-[calc(100vh-80px)] md:h-auto">
+    <div className="container mx-auto max-w-2xl p-4 flex flex-col h-[calc(100vh-80px)] md:h-[calc(100vh-100px)]">
         <Card className="flex flex-col flex-1 bg-card/80 backdrop-blur-sm">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><Wand2 /> Создать заказ с помощью AI</CardTitle>
