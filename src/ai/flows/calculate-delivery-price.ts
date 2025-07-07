@@ -13,7 +13,7 @@ import {z} from 'zod';
 import type { PricingTier } from '@/context/pricing-context';
 
 // Helper function to get route distance from Yandex Maps Directions API
-async function getRoute(startCoords: [number, number], endCoords: [number, number]): Promise<{ distance: number; geometry: number[][] }> {
+async function getRouteDistance(startCoords: [number, number], endCoords: [number, number]): Promise<number> {
     const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY; // Using the single public map key
      if (!apiKey) {
         console.error("Yandex API key is not set in the .env file.");
@@ -51,12 +51,8 @@ async function getRoute(startCoords: [number, number], endCoords: [number, numbe
         }
         
         const distanceMeters = route.summary?.distance?.value;
-        const geometry = route.geometry.map((point: [number, number]) => [point[1], point[0]]); // Swap to lat,lon
 
-        return {
-          distance: distanceMeters ? distanceMeters / 1000 : 0, // Convert meters to km
-          geometry,
-        };
+        return distanceMeters ? distanceMeters / 1000 : 0; // Convert meters to km
     } catch (error) {
         console.error("Routing error:", error);
         if (error instanceof Error) {
@@ -79,18 +75,13 @@ const CalculateDeliveryPriceInputSchema = z.object({
   pricingTiers: z.array(PricingTierSchema).describe('Массив тарифных планов для расчета.'),
 });
 export type CalculateDeliveryPriceInput = z.infer<typeof CalculateDeliveryPriceInputSchema>;
-// This const is for use inside this file or when schema is defined locally in consumer. Not for export.
-const CalculateDeliveryPriceInputSchemaForTool = CalculateDeliveryPriceInputSchema;
 
 const CalculateDeliveryPriceOutputSchema = z.object({
   distanceKm: z.number().describe('Расстояние между точками отправления и доставки в километрах.'),
   priceTl: z.number().describe('Рассчитанная стоимость доставки в рублях.'),
   pricingDetails: z.string().describe('Подробности о том, как была рассчитана цена на основе тарифных планов.'),
-  routeGeometry: z.array(z.array(z.number())).describe('Геометрия маршрута для отрисовки на карте.'),
 });
 export type CalculateDeliveryPriceOutput = z.infer<typeof CalculateDeliveryPriceOutputSchema>;
-// This const is for use inside this file or when schema is defined locally in consumer. Not for export.
-const CalculateDeliveryPriceOutputSchemaForTool = CalculateDeliveryPriceOutputSchema;
 
 
 export async function calculateDeliveryPrice(input: CalculateDeliveryPriceInput): Promise<CalculateDeliveryPriceOutput> {
@@ -129,10 +120,9 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
         throw new Error('Не удалось получить координаты для одного или обоих адресов.');
     }
 
-    const routeInfo = await getRoute(pickupCoords, dropoffCoords);
+    const rawDistanceKm = await getRouteDistance(pickupCoords, dropoffCoords);
     
-    const distanceKm = parseFloat(routeInfo.distance.toFixed(2));
-    const routeGeometry = routeInfo.geometry;
+    const distanceKm = parseFloat(rawDistanceKm.toFixed(2));
 
     // --- Price calculation logic without Gemini ---
     let calculatedPrice = 0;
@@ -167,7 +157,6 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
         distanceKm: distanceKm,
         priceTl: calculatedPrice,
         pricingDetails: pricingDetails,
-        routeGeometry: routeGeometry,
     };
   }
 );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { YMaps, Map, Placemark, Polyline } from '@pbe/react-yandex-maps';
+import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
 import { useOrders } from '@/context/order-context';
@@ -175,7 +175,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
   
   const mapState = useMemo(() => {
     const boundsOptions = { checkZoomRange: true, zoomMargin: 35 };
-    if (priceInfo && priceInfo.routeGeometry.length > 0) {
+    if (priceInfo) {
       if (mapRef.current) setTimeout(() => mapRef.current.setBounds(mapRef.current.geoObjects.getBounds(), boundsOptions), 100);
       return { center: undefined, zoom: undefined, bounds: undefined };
     }
@@ -325,7 +325,6 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
           {pickup && <Placemark geometry={pickup.coords} options={{preset: 'islands#greenDotIconWithCaption', draggable: true, iconCaption: 'Отсюда'}} onDragStart={() => setIsPlacemarkDragging(true)} onDragEnd={(e) => handlePlacemarkDrag(e, 'pickup')} />}
           {dropoff && <Placemark geometry={dropoff.coords} options={{preset: 'islands#redDotIconWithCaption', draggable: true, iconCaption: 'Сюда'}} onDragStart={() => setIsPlacemarkDragging(true)} onDragEnd={(e) => handlePlacemarkDrag(e, 'dropoff')} />}
           {isReverseGeocoding && <Placemark geometry={mapState.center} options={{ preset: 'islands#circleIcon', iconColor: '#ff8a00' }} />}
-          {priceInfo && priceInfo.routeGeometry.length > 0 && <Polyline geometry={priceInfo.routeGeometry} options={{ strokeColor: '#db2777', strokeWidth: 5, strokeOpacity: 0.8 }} />}
         </Map>
 
         {isPlacemarkDragging && (

@@ -40,7 +40,6 @@ const CalculateDeliveryPriceOutputSchema = z.object({
   distanceKm: z.number().describe('Расстояние между точками отправления и доставки в километрах.'),
   priceTl: z.number().describe('Рассчитанная стоимость доставки в рублях.'),
   pricingDetails: z.string().describe('Подробности о том, как была рассчитана цена на основе тарифных планов.'),
-  routeGeometry: z.array(z.array(z.number())).describe('Геометрия маршрута для отрисовки на карте.'),
 });
 
 
@@ -93,7 +92,6 @@ const ConfirmedOrderDataSchema = z.object({
     description: z.string().optional(),
     distanceKm: z.number(),
     priceTl: z.number(),
-    routeGeometry: z.array(z.array(z.number())),
 });
 export type ConfirmedOrderData = z.infer<typeof ConfirmedOrderDataSchema>;
 
