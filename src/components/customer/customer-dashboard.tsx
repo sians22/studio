@@ -9,8 +9,7 @@ import MapOrderPage from "./map-order-page";
 import AiOrderPage from "./ai-order-page";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
-import { useState, useEffect } from "react";
-
+import Image from "next/image";
 
 type CustomerDashboardProps = {
   activeTab: string;
@@ -71,34 +70,44 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                       <MoreHorizontal className="h-5 w-5" />
                     </Button>
                 </CardHeader>
-
-                <CardFooter className="flex flex-col items-start gap-2 p-3">
-                  <div className="flex w-full items-center justify-between">
-                      <div className="flex items-center gap-3">
-                          <Button variant="ghost" size="icon"><Heart className="h-6 w-6" /></Button>
-                          <Button variant="ghost" size="icon"><MessageCircle className="h-6 w-6" /></Button>
-                          <Button variant="ghost" size="icon"><Send className="h-6 w-6" /></Button>
-                      </div>
-                      <Button variant="ghost" size="icon"><Bookmark className="h-6 w-6" /></Button>
-                  </div>
-
-                  <div className="w-full space-y-1 px-1 text-sm">
-                      <p className="font-bold">{order.price} руб.</p>
-                      <p><span className="font-bold">{user?.username}</span>: {order.description || `Доставка из ${order.pickupAddress} в ${order.dropoffAddress}`}</p>
-                      <p className="text-muted-foreground">Статус: {order.status}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ru })}
-                      </p>
-                       {!['Доставлен', 'Отменен'].includes(order.status) && (
-                          <Button
-                            variant="link"
-                            className="h-auto p-0 text-destructive"
-                            onClick={() => handleCancelOrder(order.id)}
-                          >
-                            Отменить заказ
-                          </Button>
-                        )}
-                  </div>
+                 <CardContent className="space-y-3 p-3 pt-0">
+                    <div className="overflow-hidden rounded-md border">
+                       <Image 
+                          src={`https://placehold.co/600x400.png`} 
+                          alt="Order package" 
+                          width={600} 
+                          height={400} 
+                          className="w-full object-cover"
+                          data-ai-hint="package delivery"
+                       />
+                    </div>
+                    <div className="w-full space-y-1 px-1 text-sm">
+                        <p className="font-bold">{order.price} руб.</p>
+                        <p><span className="font-bold">{user?.username}</span>: {order.description || `Доставка из ${order.pickupAddress} в ${order.dropoffAddress}`}</p>
+                        <p className="text-muted-foreground">Статус: {order.status}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ru })}
+                        </p>
+                         {!['Доставлен', 'Отменен'].includes(order.status) && (
+                            <Button
+                              variant="link"
+                              className="h-auto p-0 text-destructive"
+                              onClick={() => handleCancelOrder(order.id)}
+                            >
+                              Отменить заказ
+                            </Button>
+                          )}
+                    </div>
+                  </CardContent>
+                  <CardFooter className="border-t p-2">
+                    <div className="flex w-full items-center justify-between">
+                        <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon"><Heart className="h-5 w-5"/></Button>
+                            <Button variant="ghost" size="icon"><MessageCircle className="h-5 w-5"/></Button>
+                            <Button variant="ghost" size="icon"><Send className="h-5 w-5"/></Button>
+                        </div>
+                        <Button variant="ghost" size="icon"><Bookmark className="h-5 w-5"/></Button>
+                    </div>
                 </CardFooter>
               </Card>
             );
