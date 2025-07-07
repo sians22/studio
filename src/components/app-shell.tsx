@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, User, LayoutDashboard, Briefcase, Search, ClipboardList, Heart, Send, PlusCircle } from "lucide-react";
+import { User, LayoutDashboard, Briefcase, Search, ClipboardList, Heart, Send, PlusCircle } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { Logo } from "@/components/icons";
 import CustomerDashboard from "@/components/customer/customer-dashboard";
@@ -15,11 +15,10 @@ import { Button } from "./ui/button";
 
 export default function AppShell() {
   const { user } = useAuth();
-  // For customer, 'home' shows orders, 'create' shows form
-  // For others, 'home' is the main view.
-  const [activeTab, setActiveTab] = useState("home");
+  // For customer, default to 'create' page. For others, 'home'.
+  const [activeTab, setActiveTab] = useState(user?.role === 'customer' ? 'create' : 'home');
   
-  const showMainHeader = !['support', 'account', 'browse'].includes(activeTab);
+  const showMainHeader = !['support', 'account', 'browse', 'create'].includes(activeTab);
 
   const renderContent = () => {
     if (activeTab === 'support') {
@@ -48,7 +47,7 @@ export default function AppShell() {
     switch (user?.role) {
       case "customer":
         return [
-          { id: "home", label: "Главная", icon: Home, action: () => setActiveTab("home") },
+          { id: "home", label: "Заказы", icon: ClipboardList, action: () => setActiveTab("home") },
           { id: "create", label: "Создать", icon: PlusCircle, action: () => setActiveTab("create") },
           { id: "browse", label: "Обзор", icon: Search, action: () => setActiveTab("browse") },
           { id: "account", label: "Аккаунт", icon: User, action: () => setActiveTab("account") },

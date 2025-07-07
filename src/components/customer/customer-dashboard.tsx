@@ -10,7 +10,6 @@ import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
 import type { OrderStatus } from "@/types";
-import Image from "next/image";
 
 type CustomerDashboardProps = {
   activeTab: string;
@@ -42,7 +41,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
   };
 
   if (activeTab === 'create') {
-    return <MapOrderPage onOrderCreated={() => setActiveTab('home')} />;
+    return <MapOrderPage onDone={() => setActiveTab('home')} />;
   }
 
   return (
@@ -52,7 +51,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
           <Card className="max-w-sm">
             <CardHeader>
               <CardTitle>Заказов пока нет!</CardTitle>
-              <CardDescription>Нажмите кнопку ниже, чтобы создать свой первый заказ.</CardDescription>
+              <CardDescription>Нажмите "Создать", чтобы оформить свой первый заказ.</CardDescription>
             </CardHeader>
             <CardContent>
                <Package className="mx-auto h-12 w-12 text-muted-foreground" />

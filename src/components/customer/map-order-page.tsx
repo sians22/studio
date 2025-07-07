@@ -30,7 +30,7 @@ const KIND_TRANSLATIONS: Record<string, string> = {
     other: 'Другое'
 };
 
-export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () => void }) {
+export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   const { toast } = useToast();
   const { addOrder } = useOrders();
   const { user } = useAuth();
@@ -240,7 +240,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
                 <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
                 <h2 className="text-2xl font-bold mb-2">Заказ создан!</h2>
                 <p className="text-muted-foreground mb-6">Ваш заказ успешно размещен. Курьер будет назначен в ближайшее время.</p>
-                <Button className="w-full" onClick={onOrderCreated}>К моим заказам</Button>
+                <Button className="w-full" onClick={onDone}>К моим заказам</Button>
             </div>
          );
     }
@@ -386,7 +386,7 @@ export default function MapOrderPage({ onOrderCreated }: { onOrderCreated: () =>
         )}
         
         <div className="pointer-events-none absolute inset-0 flex flex-col justify-end p-2 md:items-start md:justify-start md:p-4">
-            <Button variant="secondary" onClick={onOrderCreated} className="pointer-events-auto absolute top-2 left-2 z-10 md:hidden">
+            <Button variant="secondary" onClick={onDone} className="pointer-events-auto absolute top-2 left-2 z-10 md:hidden">
               <ArrowLeft />
             </Button>
              <div className={cn("pointer-events-auto w-full max-w-md self-center md:self-start md:max-h-[calc(95vh)]", isPlacemarkDragging && 'opacity-30')}>
