@@ -4,12 +4,14 @@ import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/order-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, PlusCircle, UserCircle, MoreHorizontal, Heart, MessageCircle, Send, Bookmark } from "lucide-react";
+import { Package, PlusCircle, MapPin, MessageSquareText } from "lucide-react";
 import MapOrderPage from "./map-order-page";
 import AiOrderPage from "./ai-order-page";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
-import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
+import type { OrderStatus } from "@/types";
+
 
 type CustomerDashboardProps = {
   activeTab: string;
@@ -29,6 +31,17 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
     }
   };
   
+  const getStatusVariant = (status: OrderStatus) => {
+    switch (status) {
+      case 'Доставлен': return 'default';
+      case 'Отменен': return 'destructive';
+      case 'Принят':
+      case 'В пути': return 'secondary';
+      case 'Ожидание': return 'outline';
+      default: return 'outline';
+    }
+  };
+
   if (activeTab === 'create') {
     return <MapOrderPage onOrderCreated={() => setActiveTab('home')} />;
   }
@@ -38,7 +51,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
   }
 
   return (
-    <div className="container mx-auto max-w-2xl p-0 md:p-4">
+    <div className="container mx-auto max-w-2xl">
       {customerOrders.length === 0 ? (
         <div className="flex h-[calc(100vh-200px)] flex-col items-center justify-center p-4 text-center">
           <Card className="max-w-sm">
@@ -57,61 +70,63 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
           </Card>
         </div>
       ) : (
-        <div className="space-y-4 py-4 md:space-y-8">
-          {customerOrders.map((order) => {
-            return (
-              <Card key={order.id} className="rounded-none border-x-0 border-b md:rounded-lg md:border">
-                <CardHeader className="flex flex-row items-center justify-between p-3">
-                    <div className="flex items-center gap-3">
-                        <UserCircle className="h-8 w-8 text-muted-foreground" />
-                        <div className="font-bold">Заказ №{order.id.slice(-6)}</div>
+        <div className="space-y-4 p-4 md:space-y-6">
+          {customerOrders.map((order) => (
+            <Card key={order.id}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <CardTitle>Заказ #{order.id.slice(-6)}</CardTitle>
+                    <CardDescription>
+                      {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ru })}
+                    </CardDescription>
+                  </div>
+                  <Badge variant={getStatusVariant(order.status)} className="capitalize">
+                    {order.status}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-green-500" />
+                    <div className="text-sm">
+                      <p className="font-medium">Откуда</p>
+                      <p className="text-muted-foreground">{order.pickupAddress}</p>
                     </div>
-                    <Button variant="ghost" size="icon">
-                      <MoreHorizontal className="h-5 w-5" />
-                    </Button>
-                </CardHeader>
-                 <CardContent className="space-y-3 p-3 pt-0">
-                    <div className="overflow-hidden rounded-md border">
-                       <Image 
-                          src={`https://placehold.co/600x400.png`} 
-                          alt="Order package" 
-                          width={600} 
-                          height={400} 
-                          className="w-full object-cover"
-                          data-ai-hint="package delivery"
-                       />
+                  </div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <MapPin className="h-5 w-5 text-red-500" />
+                    <div className="text-sm">
+                      <p className="font-medium">Куда</p>
+                      <p className="text-muted-foreground">{order.dropoffAddress}</p>
                     </div>
-                    <div className="w-full space-y-1 px-1 text-sm">
-                        <p className="font-bold">{order.price} руб.</p>
-                        <p><span className="font-bold">{user?.username}</span>: {order.description || `Доставка из ${order.pickupAddress} в ${order.dropoffAddress}`}</p>
-                        <p className="text-muted-foreground">Статус: {order.status}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true, locale: ru })}
-                        </p>
-                         {!['Доставлен', 'Отменен'].includes(order.status) && (
-                            <Button
-                              variant="link"
-                              className="h-auto p-0 text-destructive"
-                              onClick={() => handleCancelOrder(order.id)}
-                            >
-                              Отменить заказ
-                            </Button>
-                          )}
-                    </div>
-                  </CardContent>
-                  <CardFooter className="border-t p-2">
-                    <div className="flex w-full items-center justify-between">
-                        <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon"><Heart className="h-5 w-5"/></Button>
-                            <Button variant="ghost" size="icon"><MessageCircle className="h-5 w-5"/></Button>
-                            <Button variant="ghost" size="icon"><Send className="h-5 w-5"/></Button>
-                        </div>
-                        <Button variant="ghost" size="icon"><Bookmark className="h-5 w-5"/></Button>
-                    </div>
-                </CardFooter>
-              </Card>
-            );
-          })}
+                  </div>
+                </div>
+                {order.description && (
+                  <div className="flex items-start gap-3 border-t pt-4">
+                    <MessageSquareText className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">{order.description}</p>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter className="flex items-center justify-between bg-muted/50 p-4">
+                <p className="text-lg font-bold">{order.price} руб.</p>
+                {!['Доставлен', 'Отменен'].includes(order.status) && (
+                  <Button
+                    variant="ghost"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => handleCancelOrder(order.id)}
+                    size="sm"
+                  >
+                    Отменить заказ
+                  </Button>
+                )}
+              </CardFooter>
+            </Card>
+          ))}
         </div>
       )}
     </div>
