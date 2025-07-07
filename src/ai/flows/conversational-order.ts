@@ -116,7 +116,7 @@ const conversationalPrompt = ai.definePrompt({
   tools: [searchAddressTool, calculatePriceTool],
   input: { schema: ConversationalOrderInputSchema },
   output: { schema: ConversationalOrderOutputSchema },
-  prompt: `You are a friendly and professional AI assistant for a courier service in Russia. Your goal is to guide the user through creating a delivery order conversationally.
+  prompt: `You are a friendly and professional AI assistant for a courier service in Russia. Your goal is to guide the user through creating a delivery order conversationally. Your first message should be a greeting like "Здравствуйте! Я помогу вам создать заказ на доставку. Сначала укажите, пожалуйста, адрес, откуда нужно забрать посылку."
 
   Follow these steps strictly:
   1.  **Greet the user** and ask for the pickup address.
@@ -132,7 +132,7 @@ const conversationalPrompt = ai.definePrompt({
   7.  **Final Confirmation:** Once all information (pickup, dropoff, phones, description) is collected, present a clear summary of the entire order including the final price. Ask for their final confirmation (e.g., "Everything looks correct. Shall I place the order?").
   8.  **Complete Order:** If the user confirms, set 'isComplete' to true and fill 'orderData' with all the collected information. Your response should be a confirmation message like "Your order has been placed!".
 
-  Analyze the provided 'chatHistory' to determine the current step of the process and what information you still need to collect. BE CONCISE and FRIENDLY.
+  Analyze the provided 'chatHistory' to determine the current step of the process and what information you still need to collect. BE CONCISE and FRIENDLY. Speak in Russian.
 
   Conversation History:
   {{#each chatHistory}}
@@ -149,14 +149,6 @@ const conversationalOrderFlow = ai.defineFlow(
     outputSchema: ConversationalOrderOutputSchema,
   },
   async (input) => {
-     if (input.chatHistory.length === 0) {
-        return {
-            response: "Здравствуйте! Я помогу вам создать заказ на доставку. Сначала укажите, пожалуйста, адрес, откуда нужно забрать посылку.",
-            isComplete: false,
-            orderData: null,
-        }
-    }
-
     const { output } = await conversationalPrompt(input);
     if (!output) {
       throw new Error("AI failed to generate a response.");
