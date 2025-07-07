@@ -399,12 +399,12 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
             </div>
         )}
         
-        <div className="pointer-events-none absolute inset-0 flex flex-col justify-end p-2 md:items-start md:justify-start md:p-4">
-            <Button variant="secondary" onClick={onDone} className="pointer-events-auto absolute top-2 left-2 z-10 md:hidden">
+        <div className="pointer-events-none absolute inset-0 flex flex-col justify-start p-2 md:items-start md:p-4">
+            <Button variant="secondary" onClick={onDone} className="pointer-events-auto absolute top-4 left-4 z-10 md:hidden">
               <ArrowLeft />
             </Button>
-             <div className={cn("pointer-events-auto w-full max-w-md self-center md:self-start md:max-h-[calc(95vh)]", isPlacemarkDragging && 'opacity-30')}>
-                 <Card className="flex flex-col max-h-[70vh] md:max-h-[90vh]">
+             <div className={cn("pointer-events-auto mt-14 w-full max-w-md self-center md:mt-0 md:self-start md:max-h-[calc(95vh)]", isPlacemarkDragging && 'opacity-30')}>
+                 <Card className="flex flex-col max-h-[80vh] md:max-h-[90vh]">
                     {renderPanel()}
                  </Card>
             </div>
