@@ -14,10 +14,10 @@ import type { PricingTier } from '@/context/pricing-context';
 
 // Helper function to get route distance from Yandex Maps Directions API
 async function getRouteDistance(startCoords: [number, number], endCoords: [number, number]): Promise<number> {
-    const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY; // Using the single public map key
-     if (!apiKey) {
-        console.error("Yandex API key is not set in the .env file.");
-        throw new Error("Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что NEXT_PUBLIC_YANDEX_MAP_API_KEY задан в .env.");
+    const apiKey = process.env.YANDEX_ROUTING_API_KEY; // Use the dedicated, server-side routing key
+     if (!apiKey || apiKey === "YOUR_YANDEX_ROUTING_API_KEY_HERE") {
+        console.error("Yandex ROUTING API key is not set in the .env file.");
+        throw new Error("Ключ API Яндекс Маршрутов не настроен. Пожалуйста, убедитесь, что YANDEX_ROUTING_API_KEY задан в .env и имеет права на 'Directions API'.");
     }
     // Yandex Directions API expects lon,lat format for waypoints
     const waypoints = `${startCoords[1]},${startCoords[0]}|${endCoords[1]},${endCoords[0]}`;
@@ -29,10 +29,10 @@ async function getRouteDistance(startCoords: [number, number], endCoords: [numbe
         if (!response.ok) {
             console.error("Yandex Directions API error response:", JSON.stringify(data, null, 2));
              if(response.status === 401) {
-                throw new Error("Ошибка аутентификации (401). Ваш ключ API недействителен или у него нет доступа к 'Directions API'. Пожалуйста, проверьте в Кабинете разработчика Яндекс, что для вашего ключа подключен сервис 'Directions API'.");
+                throw new Error("Ошибка аутентификации (401). Ваш ключ API для маршрутов (YANDEX_ROUTING_API_KEY) недействителен или у него нет доступа к 'Directions API'. Пожалуйста, проверьте в Кабинете разработчика Яндекс, что для вашего ключа подключен сервис 'Directions API'.");
             }
             if(response.status === 403) {
-                throw new Error("Ошибка доступа к API Маршрутов (403). Убедитесь, что ваш ключ имеет права на 'Directions API' в кабинете разработчика Яндекс.");
+                throw new Error("Ошибка доступа к API Маршрутов (403). Убедитесь, что ваш ключ (YANDEX_ROUTING_API_KEY) имеет права на 'Directions API' в кабинете разработчика Яндекс.");
             }
              if (response.status === 404 && data?.message?.includes("point not found")) {
                 throw new Error("Ошибка 404: Не удалось найти одну из точек на дороге. Попробуйте выбрать точки ближе к проезжей части.");
@@ -62,17 +62,15 @@ async function getRouteDistance(startCoords: [number, number], endCoords: [numbe
     }
 }
 
-const PricingTierSchema = z.object({
-  range: z.string().describe('The distance range for this price tier (e.g., "0-3 km").'),
-  price: z.number().describe('Цена для этого тарифа в рублях.'),
-});
-
 const CalculateDeliveryPriceInputSchema = z.object({
   pickupAddress: z.string().describe('Адрес, откуда будет осуществляться доставка.'),
   dropoffAddress: z.string().describe('Адрес, куда будет осуществляться доставка.'),
   pickupCoords: z.array(z.number()).length(2).describe('Координаты точки отправления [широта, долгота].'),
   dropoffCoords: z.array(z.number()).length(2).describe('Координаты точки доставки [широта, долгота].'),
-  pricingTiers: z.array(PricingTierSchema).describe('Массив тарифных планов для расчета.'),
+  pricingTiers: z.array(z.object({
+    range: z.string().describe('The distance range for this price tier (e.g., "0-3 km").'),
+    price: z.number().describe('Цена для этого тарифа в рублях.'),
+  })).describe('Массив тарифных планов для расчета.'),
 });
 export type CalculateDeliveryPriceInput = z.infer<typeof CalculateDeliveryPriceInputSchema>;
 
@@ -134,7 +132,7 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
         const [min, max] = parseRange(tier.range);
         if (distanceKm >= min && distanceKm <= max) {
             calculatedPrice = tier.price;
-            matchedTier = tier;
+            matchedTier = tier as PricingTier;
             break;
         }
     }
