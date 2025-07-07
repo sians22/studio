@@ -30,7 +30,7 @@ const getHwid = (): string => {
 const initialUsers: User[] = [
     { id: "user-2-demo", hwid: "hwid-courier", username: "Демо Курьер", role: "courier" },
     { id: "user-3-demo", hwid: "hwid-admin", username: "Демо Админ", role: "admin" },
-    { id: "user-4-admin", hwid: "caf87390-27d3-4e6d-9eae-b1ac4027c941", username: "Админ", role: "admin" },
+    { id: "user-4-customer", hwid: "caf87390-27d3-4e6d-9eae-b1ac4027c941", username: "Müşteri", role: "customer" },
 ];
 
 export function AuthProvider({ children }: { children: ReactNode }) {
