@@ -36,7 +36,7 @@ const reverseGeocodeFlow = ai.defineFlow(
   async ({ coords }) => {
     // Use the single public map key for all Yandex services
     const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY; 
-    if (!apiKey) {
+    if (!apiKey || apiKey === 'YOUR_YANDEX_MAP_API_KEY_HERE') {
         console.error("Yandex API key is not set in the .env file.");
         throw new Error("Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что NEXT_PUBLIC_YANDEX_MAP_API_KEY задан в .env и имеет права на 'JavaScript API and HTTP Geocoder'.");
     }

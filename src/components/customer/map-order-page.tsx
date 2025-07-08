@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowLeft, MapPin, Wallet, Phone, MessageSquareText, Rocket, X, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, MapPin, Phone, MessageSquareText, Rocket, X, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type AddressFocus = 'pickup' | 'dropoff';
@@ -178,7 +178,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 <CardHeader>
                     <CardTitle className="text-destructive">Ошибка Конфигурации</CardTitle>
                     <CardDescription>
-                        Ключ API Яндекс Карт не настроен. Пожалуйста, Firebase App Hosting ayarlarınıza gidin ve `NEXT_PUBLIC_YANDEX_MAP_API_KEY` adında bir ortam değişkeni ekleyin.
+                       API Anahtarı eksik. Lütfen sol taraftaki dosya gezgininden `.env` dosyasını açın ve `YOUR_YANDEX_MAP_API_KEY_HERE` yazan yeri kendi Yandex Haritalar API anahtarınızla değiştirin.
                     </CardDescription>
                 </CardHeader>
             </Card>
@@ -189,56 +189,63 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   const renderPanel = () => {
     if (priceInfo) {
          return (
-            <>
-              <CardHeader className="shrink-0 p-3">
+            <div className="flex h-full flex-col">
+              <CardHeader className="p-4">
                 <div className="flex items-center gap-2">
-                   <Button variant="ghost" size="icon" onClick={() => { setPriceInfo(null); setDropoff(null); setAddressFocus('dropoff'); }}>
+                   <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8" onClick={() => { setPriceInfo(null); setDropoff(null); setAddressFocus('dropoff'); }}>
                         <ArrowLeft />
                    </Button>
-                   <CardTitle>Подтверждение заказа</CardTitle>
+                   <CardTitle className="text-lg">Подтверждение заказа</CardTitle>
                 </div>
               </CardHeader>
-              <div className="flex-1 overflow-y-auto no-scrollbar p-3 pt-0">
-                 <div className="space-y-2">
-                    <div className="flex items-center justify-between rounded-lg bg-muted p-3">
-                      <div>
-                        <div className="text-sm text-muted-foreground">Расстояние</div>
-                        <div className="font-bold">{priceInfo?.distanceKm} km</div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-muted-foreground">Цена</div>
-                        <div className="text-2xl font-bold text-primary">{priceInfo?.priceTl} руб.</div>
-                      </div>
-                    </div>
-                    <p className="px-1 text-xs text-muted-foreground">{priceInfo?.pricingDetails}</p>
-                    
-                    <div className="grid grid-cols-1 gap-2 pt-2 md:grid-cols-2">
-                      <div className="space-y-1"><label className="px-1 text-sm font-medium">Телефон отправителя</label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={senderPhone} onChange={e => setSenderPhone(e.target.value)} className="pl-10" /></div></div>
-                      <div className="space-y-1"><label className="px-1 text-sm font-medium">Телефон получателя</label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={receiverPhone} onChange={e => setReceiverPhone(e.target.value)} className="pl-10" /></div></div>
-                    </div>
-                    <div className="space-y-1 pt-2"><label className="px-1 text-sm font-medium">Примечание (необязательно)</label><div className="relative"><MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Textarea placeholder="Что-то важное..." value={description} onChange={e => setDescription(e.target.value)} className="pl-10" /></div></div>
+              <div className="flex-1 space-y-3 overflow-y-auto px-4">
+                 <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                   <div>
+                     <div className="text-sm text-muted-foreground">Расстояние</div>
+                     <div className="font-bold">{priceInfo?.distanceKm} km</div>
+                   </div>
+                   <div>
+                     <div className="text-sm text-muted-foreground">Цена</div>
+                     <div className="text-2xl font-bold text-primary">{priceInfo?.priceTl} руб.</div>
+                   </div>
+                 </div>
+                 <p className="px-1 text-xs text-muted-foreground">{priceInfo?.pricingDetails}</p>
+                 
+                 <div className="space-y-3">
+                   <div className="space-y-1">
+                     <label className="px-1 text-sm font-medium">Телефон отправителя</label>
+                     <div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={senderPhone} onChange={e => setSenderPhone(e.target.value)} className="pl-9" /></div>
+                   </div>
+                   <div className="space-y-1">
+                     <label className="px-1 text-sm font-medium">Телефон получателя</label>
+                     <div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={receiverPhone} onChange={e => setReceiverPhone(e.target.value)} className="pl-9" /></div>
+                   </div>
+                   <div className="space-y-1">
+                     <label className="px-1 text-sm font-medium">Примечание (необязательно)</label>
+                     <div className="relative"><MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Textarea placeholder="Что-то важное..." value={description} onChange={e => setDescription(e.target.value)} className="pl-9" /></div>
+                   </div>
                  </div>
               </div>
-              <CardFooter className="shrink-0 p-3">
+              <CardFooter className="p-4">
                 <Button className="w-full" onClick={handleConfirmOrder} disabled={isLoading}>
                   {isLoading ? <Loader2 className="animate-spin" /> : <><Rocket className="mr-2"/>Подтвердить и заказать</> }
                 </Button>
               </CardFooter>
-            </>
+            </div>
          );
     }
     
     return (
-        <>
+        <div className="flex h-full flex-col">
             <CardHeader>
                 <CardTitle>Создать заказ</CardTitle>
                 <CardDescription>Укажите адреса отправления и назначения.</CardDescription>
             </CardHeader>
-            <CardContent className="flex flex-1 flex-col space-y-2 overflow-hidden">
+            <div className="flex flex-1 flex-col space-y-2 overflow-hidden px-6 pb-6">
                 {/* Pickup Field */}
                 <div 
                     className={cn(
-                        "flex shrink-0 items-center gap-2 rounded-md border p-2",
+                        "flex shrink-0 cursor-text items-center gap-2 rounded-md border p-2",
                         addressFocus === 'pickup' && 'ring-2 ring-primary'
                     )}
                     onClick={() => {
@@ -249,25 +256,22 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                         }
                     }}
                 >
+                     <MapPin className="h-5 w-5 shrink-0 text-green-500" />
                     {addressFocus === 'pickup' ? (
                         <div className="relative flex-1">
-                            <MapPin className="pointer-events-none absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 text-green-500" />
                             <Input
                                 ref={inputRef}
                                 placeholder="Откуда?"
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
-                                className="h-auto w-full border-0 bg-transparent p-0 pl-7 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                className="h-auto w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                                 autoFocus
                             />
                         </div>
                     ) : (
-                        <>
-                            <MapPin className="h-5 w-5 text-green-500" />
-                            <div className="flex-1 cursor-pointer text-sm">
-                                {pickup ? <span className="truncate">{pickup.address}</span> : <span className="text-muted-foreground">Откуда?</span>}
-                            </div>
-                        </>
+                        <div className="flex-1 text-sm">
+                            {pickup ? <span className="truncate">{pickup.address}</span> : <span className="text-muted-foreground">Откуда?</span>}
+                        </div>
                     )}
                     {pickup && (
                         <Button 
@@ -291,7 +295,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 {/* Dropoff Field */}
                 <div 
                     className={cn(
-                        "flex shrink-0 items-center gap-2 rounded-md border p-2",
+                        "flex shrink-0 cursor-text items-center gap-2 rounded-md border p-2",
                         addressFocus === 'dropoff' && 'ring-2 ring-primary'
                     )}
                     onClick={() => {
@@ -302,25 +306,22 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                         }
                     }}
                 >
+                    <MapPin className="h-5 w-5 shrink-0 text-red-500" />
                     {addressFocus === 'dropoff' ? (
                         <div className="relative flex-1">
-                           <MapPin className="pointer-events-none absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 text-red-500" />
                            <Input
                                ref={inputRef}
                                placeholder="Куда?"
                                value={searchQuery}
                                onChange={(e) => setSearchQuery(e.target.value)}
-                               className="h-auto w-full border-0 bg-transparent p-0 pl-7 focus-visible:ring-0 focus-visible:ring-offset-0"
+                               className="h-auto w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
                                autoFocus
                            />
                        </div>
                     ) : (
-                        <>
-                            <MapPin className="h-5 w-5 text-red-500" />
-                            <div className="flex-1 cursor-pointer text-sm">
-                                {dropoff ? <span className="truncate">{dropoff.address}</span> : <span className="text-muted-foreground">Куда?</span>}
-                            </div>
-                        </>
+                        <div className="flex-1 text-sm">
+                            {dropoff ? <span className="truncate">{dropoff.address}</span> : <span className="text-muted-foreground">Куда?</span>}
+                        </div>
                     )}
                      {dropoff && (
                         <Button 
@@ -341,7 +342,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 </div>
                 
                 {/* Suggestions List */}
-                <div className="flex-1 overflow-y-auto no-scrollbar pt-2">
+                <div className="flex-1 overflow-y-auto pt-2">
                     {isSearching && (
                         <div className="flex items-center justify-center p-4 text-muted-foreground">
                             <Loader2 className="h-5 w-5 animate-spin mr-2"/>
@@ -374,7 +375,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                         </div>
                     )}
                 </div>
-            </CardContent>
+            </div>
              {isLoading && !priceInfo && (
                 <CardFooter>
                     <div className="flex w-full items-center justify-center text-muted-foreground">
@@ -383,7 +384,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                     </div>
                 </CardFooter>
             )}
-        </>
+        </div>
     )
   }
   
