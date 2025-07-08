@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { GoogleMap, useLoadScript, Marker, Polyline } from '@react-google-maps/api';
+import { GoogleMap, Marker, Polyline } from '@react-google-maps/api';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
 import { useOrders } from '@/context/order-context';
@@ -32,13 +32,11 @@ const mapOptions = {
   clickableIcons: false,
 };
 
-const LIBRARIES: ('places' | 'drawing' | 'geometry' | 'visualization')[] = ['places'];
-
 const MARKER_ICON_GREEN = `data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3e%3cpath fill='%2316a34a' d='M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67a24 24 0 01-35.464 0zM192 272a80 80 0 100-160 80 80 0 000 160z'/%3e%3c/svg%3e`;
 const MARKER_ICON_RED = `data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3e%3cpath fill='%23dc2626' d='M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67a24 24 0 01-35.464 0zM192 272a80 80 0 100-160 80 80 0 000 160z'/%3e%3c/svg%3e`;
 
 
-export default function MapOrderPage({ onDone }: { onDone: () => void }) {
+export default function MapOrderPage({ onDone, isLoaded, loadError }: { onDone: () => void; isLoaded: boolean; loadError: Error | undefined }) {
   const { toast } = useToast();
   const { addOrder } = useOrders();
   const { user } = useAuth();
@@ -66,12 +64,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   const inputRef = useRef<HTMLInputElement>(null);
   
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-  const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: apiKey,
-    libraries: LIBRARIES,
-    language: 'ru',
-  });
-
+  
   const onMapLoad = useCallback((map: any) => {
     mapRef.current = map;
   }, []);

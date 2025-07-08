@@ -99,9 +99,10 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
-  const { isLoaded } = useLoadScript({
+  const { isLoaded, loadError } = useLoadScript({
     googleMapsApiKey: apiKey,
     libraries: LIBRARIES,
+    language: 'ru',
   });
 
   const customerOrders = orders.filter((order) => order.customerId === user?.id);
@@ -125,7 +126,7 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
   };
 
   if (activeTab === 'create') {
-    return <MapOrderPage onDone={() => setActiveTab('home')} />;
+    return <MapOrderPage onDone={() => setActiveTab('home')} isLoaded={isLoaded} loadError={loadError} />;
   }
 
   return (
