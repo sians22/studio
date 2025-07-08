@@ -214,8 +214,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
               </CardContent>
               <CardFooter>
                 <Button className="w-full" onClick={handleConfirmOrder} disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : <Rocket className="mr-2"/> }
-                  Подтвердить и заказать
+                  {isLoading ? <Loader2 className="animate-spin" /> : <><Rocket className="mr-2"/>Подтвердить и заказать</> }
                 </Button>
               </CardFooter>
             </>
@@ -252,6 +251,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                         placeholder={addressFocus === 'pickup' ? "Поиск адреса отправления..." : "Поиск адреса назначения..."}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
+                        autoFocus
                     />
                     {isSearching && <Loader2 className="absolute right-3 top-[18px] h-4 w-4 animate-spin text-muted-foreground" />}
                 </div>
