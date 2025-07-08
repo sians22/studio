@@ -265,7 +265,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                    <CardTitle>Подтверждение заказа</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 space-y-4 overflow-y-auto">
+              <CardContent className={cn("flex-1 space-y-4 overflow-y-auto no-scrollbar")}>
                 <div className="flex items-center justify-between rounded-lg bg-muted p-3">
                   <div>
                     <div className="text-sm text-muted-foreground">Расстояние</div>
@@ -300,7 +300,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 <CardTitle>Создать заказ</CardTitle>
                 <CardDescription>Укажите адреса отправления и назначения.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 space-y-2 overflow-y-auto">
+            <CardContent className={cn("flex-1 space-y-2 overflow-y-auto no-scrollbar")}>
                 <div 
                     className={cn("flex items-center gap-3 rounded-md border p-2 cursor-pointer", addressFocus === 'pickup' && 'ring-2 ring-primary')}
                     onClick={() => setAddressFocus('pickup')}
@@ -329,7 +329,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 </div>
                 
                 {suggestions.length > 0 && (
-                <div className="mt-2 max-h-48 overflow-y-auto rounded-md border">
+                <div className="mt-2 rounded-md border">
                     {Object.entries(suggestions.reduce((acc: Record<string, SearchAddressOutput>, suggestion) => {
                         const kindKey = suggestion.kind || 'other';
                         const kind = KIND_TRANSLATIONS[kindKey] || KIND_TRANSLATIONS['other'];
@@ -399,12 +399,12 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
             </div>
         )}
         
-        <div className="pointer-events-none absolute inset-0 flex flex-col justify-start p-2 md:items-start md:p-4">
+        <div className="pointer-events-none absolute inset-0 flex flex-col p-2 md:p-4">
             <Button variant="secondary" onClick={onDone} className="pointer-events-auto absolute top-4 left-4 z-10 md:hidden">
               <ArrowLeft />
             </Button>
-             <div className={cn("pointer-events-auto mt-14 w-full max-w-md self-center md:mt-0 md:self-start md:max-h-[calc(95vh)]", isPlacemarkDragging && 'opacity-30')}>
-                 <Card className="flex flex-col max-h-[80vh] md:max-h-[90vh]">
+             <div className={cn("pointer-events-auto mt-14 flex w-full max-w-md flex-1 flex-col self-center md:mt-0 md:self-start", isPlacemarkDragging && 'opacity-30')}>
+                 <Card className="flex flex-1 flex-col">
                     {renderPanel()}
                  </Card>
             </div>
