@@ -174,7 +174,14 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   if (!apiKey || apiKey === 'YOUR_YANDEX_MAP_API_KEY_HERE') {
     return (
         <div className="flex h-screen flex-col items-center justify-center p-4 text-center">
-            <Card className="max-w-sm"><CardHeader><CardTitle className="text-destructive">Ошибка Конфигурации</CardTitle><CardDescription>Ключ API Яндекс Карт не настроен в `.env` файле.</CardDescription></CardHeader></Card>
+            <Card className="max-w-sm">
+                <CardHeader>
+                    <CardTitle className="text-destructive">Ошибка Конфигурации</CardTitle>
+                    <CardDescription>
+                        Ключ API Яндекс Карт не настроен. Пожалуйста, Firebase App Hosting ayarlarınıza gidin ve `NEXT_PUBLIC_YANDEX_MAP_API_KEY` adında bir ortam değişkeni ekleyin.
+                    </CardDescription>
+                </CardHeader>
+            </Card>
         </div>
     );
   }
@@ -183,7 +190,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
     if (priceInfo) {
          return (
             <>
-              <CardHeader className="p-3 shrink-0">
+              <CardHeader className="shrink-0 p-3">
                 <div className="flex items-center gap-2">
                    <Button variant="ghost" size="icon" onClick={() => { setPriceInfo(null); setDropoff(null); setAddressFocus('dropoff'); }}>
                         <ArrowLeft />
@@ -191,7 +198,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                    <CardTitle>Подтверждение заказа</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto no-scrollbar p-3 pt-0">
+              <div className="flex-1 overflow-y-auto no-scrollbar p-3 pt-0">
                  <div className="space-y-2">
                     <div className="flex items-center justify-between rounded-lg bg-muted p-3">
                       <div>
@@ -211,8 +218,8 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                     </div>
                     <div className="space-y-1 pt-2"><label className="px-1 text-sm font-medium">Примечание (необязательно)</label><div className="relative"><MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Textarea placeholder="Что-то важное..." value={description} onChange={e => setDescription(e.target.value)} className="pl-10" /></div></div>
                  </div>
-              </CardContent>
-              <CardFooter className="p-3 shrink-0">
+              </div>
+              <CardFooter className="shrink-0 p-3">
                 <Button className="w-full" onClick={handleConfirmOrder} disabled={isLoading}>
                   {isLoading ? <Loader2 className="animate-spin" /> : <><Rocket className="mr-2"/>Подтвердить и заказать</> }
                 </Button>
@@ -414,8 +421,8 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
             <Button variant="secondary" onClick={onDone} className="pointer-events-auto absolute top-4 left-4 z-10 hidden md:flex">
               <ArrowLeft className="mr-2"/> К заказам
             </Button>
-             <div className="pointer-events-auto flex w-full max-w-md flex-1 flex-col self-center md:self-start md:mt-12">
-                 <Card className="flex flex-1 flex-col overflow-hidden">
+             <div className="pointer-events-auto relative flex w-full max-w-md flex-1 flex-col self-center md:self-start md:mt-12">
+                 <Card className="flex h-full flex-col overflow-hidden">
                     {renderPanel()}
                  </Card>
             </div>
