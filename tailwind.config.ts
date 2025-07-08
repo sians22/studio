@@ -20,6 +20,7 @@ export default {
         body: ['Inter', 'sans-serif'],
         headline: ['Inter', 'sans-serif'],
         code: ['monospace'],
+        'grand-hotel': ['"Grand Hotel"', 'cursive'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -77,10 +78,15 @@ export default {
           from: { height: "var(--radix-accordion-content-height)" },
           to: { height: "0" },
         },
+        "ride": {
+          "0%, 100%": { transform: "translateX(-3px) rotate(-3deg)" },
+          "50%": { transform: "translateX(3px) rotate(3deg)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
+        "ride": "ride 0.8s ease-in-out infinite",
       },
     },
   },

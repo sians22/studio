@@ -7,6 +7,7 @@ import type { User, Role } from "@/types";
 interface AuthContextType {
   user: User | null;
   hwid: string | null;
+  isAuthLoading: boolean;
   logout: () => void;
   users: User[];
   addUser: (user: Omit<User, 'id'>) => void;
@@ -37,9 +38,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [hwid, setHwid] = useState<string | null>(null);
   const [users, setUsers] = useState<User[]>(initialUsers);
+  const [isAuthLoading, setIsAuthLoading] = useState(true);
 
   useEffect(() => {
-    // This effect runs whenever `users` changes, ensuring login if hwid matches.
+    // This effect runs once on app startup to show a loading screen.
+    const timer = setTimeout(() => {
+        setIsAuthLoading(false);
+    }, 2000); // Display loading screen for 2 seconds
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // This effect handles the actual authentication logic.
+    // It runs when the component mounts and whenever the list of users changes.
     const deviceHwid = getHwid();
     setHwid(deviceHwid);
 
@@ -86,8 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // The useEffect will automatically log in the user after `users` state is updated.
   }, [users]);
 
+  const value = { user, hwid, isAuthLoading, logout, users, addUser, registerNewUser };
+
   return (
-    <AuthContext.Provider value={{ user, hwid, logout, users, addUser, registerNewUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
