@@ -25,6 +25,7 @@ const mockOrders: Order[] = [
     price: 10,
     distance: 2.5,
     createdAt: Date.now() - 2 * 24 * 60 * 60 * 1000,
+    routeGeometry: [[41.0369, 28.9859], [41.032, 28.98], [41.0256, 28.9744]]
   },
   {
     id: "order-2",
@@ -50,6 +51,7 @@ const mockOrders: Order[] = [
     price: 10,
     distance: 2.1,
     createdAt: Date.now() - 60 * 1000,
+    routeGeometry: [[41.0436, 29.0068], [41.046, 29.018], [41.048, 29.023]]
   },
 ];
 
@@ -69,8 +71,11 @@ export function OrderProvider({ children }: { children: ReactNode }) {
 
   const updateOrderStatus = useCallback((orderId: string, status: OrderStatus, courierId?: string) => {
     setOrders((prev) =>
-      prev.map((order) =>
-        order.id === orderId ? { ...order, status, courierId: courierId ?? order.courierId } : order
+      prev.map((o) =>
+        o.id === orderId ? { ...o, status, courierId: courierId ?? o.courierId, 
+          // If order is accepted, assign it to a demo courier for tracking purposes
+          ...(status === 'Принят' && !o.courierId && { courierId: 'user-2-demo' })
+        } : o
       )
     );
   }, []);

@@ -1,7 +1,7 @@
 'use server';
 
 /**
- * @fileOverview Flow to calculate the delivery price based on the distance between pickup and drop-off locations using Yandex Maps.
+ * @fileOverview Flow to calculate the delivery price based on the distance between pickup and drop-off locations using Google Maps.
  *
  * - calculateDeliveryPrice - A function that calculates the delivery price.
  * - CalculateDeliveryPriceInput - The input type for the calculateDeliveryPrice function.
@@ -12,72 +12,85 @@ import {ai} from '@/ai/genkit';
 import {z} from 'zod';
 import type { PricingTier } from '@/context/pricing-context';
 
+// Function to decode Google's encoded polyline format
+function decode(encoded: string): number[][] {
+  let index = 0;
+  let lat = 0;
+  let lng = 0;
+  const coordinates: number[][] = [];
+  let shift = 0;
+  let result = 0;
+  let byte: number;
+  let latitude_change: number;
+  let longitude_change: number;
 
-/**
- * Calculates the straight-line (haversine) distance between two points on Earth.
- * @param coords1 - [lat, lon] for the first point.
- * @param coords2 - [lat, lon] for the second point.
- * @returns The distance in kilometers.
- */
-function haversineDistance(coords1: [number, number], coords2: [number, number]): number {
-  const R = 6371; // Radius of the Earth in km
-  const dLat = (coords2[0] - coords1[0]) * Math.PI / 180;
-  const dLon = (coords2[1] - coords1[1]) * Math.PI / 180;
-  const lat1 = coords1[0] * Math.PI / 180;
-  const lat2 = coords2[0] * Math.PI / 180;
+  while (index < encoded.length) {
+    shift = 0;
+    result = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    latitude_change = (result & 1) ? ~(result >> 1) : (result >> 1);
 
-  const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-            Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
+    shift = 0;
+    result = 0;
+    do {
+      byte = encoded.charCodeAt(index++) - 63;
+      result |= (byte & 0x1f) << shift;
+      shift += 5;
+    } while (byte >= 0x20);
+    longitude_change = (result & 1) ? ~(result >> 1) : (result >> 1);
+
+    lat += latitude_change;
+    lng += longitude_change;
+    coordinates.push([lat / 1e5, lng / 1e5]);
+  }
+  return coordinates;
 }
 
 
-// Helper function to get route distance from Yandex Maps Directions API
-async function getRouteDistance(startCoords: [number, number], endCoords: [number, number]): Promise<{distance: number, isEstimate: boolean}> {
-    const apiKey = process.env.YANDEX_ROUTING_API_KEY; // Use the dedicated, server-side routing key
+// Helper function to get route distance from Google Maps Directions API
+async function getGoogleRoute(startCoords: [number, number], endCoords: [number, number]): Promise<{ distance: number; geometry: number[][] }> {
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     
-    // If no routing key is provided, fall back to an estimated straight-line distance
-    if (!apiKey || apiKey === "YOUR_YANDEX_ROUTING_API_KEY_HERE") {
-        console.warn("Yandex ROUTING API key is not set. Falling back to straight-line distance calculation.");
-        // A common "circuity factor" is between 1.1 and 1.5. Let's use 1.3 to make it more realistic.
-        const distance = haversineDistance(startCoords, endCoords) * 1.3; 
-        return { distance: distance, isEstimate: true };
+    if (!apiKey || apiKey === "YOUR_GOOGLE_MAPS_API_KEY_HERE") {
+        console.error("Google API key is not set. Routing is not possible.");
+        throw new Error("Ключ API Google Карт не настроен. Пожалуйста, убедитесь, что NEXT_PUBLIC_GOOGLE_MAPS_API_KEY задан в переменных окружения вашего хостинга и имеет права на 'Directions API'.");
     }
 
-    const waypoints = `${startCoords[1]},${startCoords[0]}|${endCoords[1]},${endCoords[0]}`;
-    const url = `https://api.routing.yandex.net/v2/route?apikey=${apiKey}&waypoints=${waypoints}&mode=driving`;
+    const origin = `${startCoords[0]},${startCoords[1]}`;
+    const destination = `${endCoords[0]},${endCoords[1]}`;
+    const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&key=${apiKey}&language=ru`;
 
     try {
         const response = await fetch(url);
         const data = await response.json();
 
-        if (!response.ok) {
-            console.error("Yandex Directions API error response:", JSON.stringify(data, null, 2));
-             if(response.status === 401) {
-                throw new Error("Ошибка аутентификации (401). Ваш ключ API для маршрутов (YANDEX_ROUTING_API_KEY) недействителен или у него нет доступа к 'Directions API'. Пожалуйста, проверьте в Кабинете разработчика Яндекс, что для вашего ключа подключен сервис 'Directions API'.");
+        if (data.status !== 'OK') {
+            console.error("Google Directions API error response:", JSON.stringify(data, null, 2));
+            if (data.status === 'REQUEST_DENIED') {
+                 throw new Error("Ошибка API Google Маршрутов. Похоже, ваш API-ключ недействителен или у него нет прав на 'Directions API'. Пожалуйста, перейдите в Google Cloud Console, выберите ваш проект и убедитесь, что сервис 'Directions API' для него включен.");
             }
-            if(response.status === 403) {
-                throw new Error("Ошибка доступа к API Маршрутов (403). Убедитесь, что ваш ключ (YANDEX_ROUTING_API_KEY) имеет права на 'Directions API' в кабинете разработчика Яндекс.");
+             if (data.status === 'NOT_FOUND' || data.status === 'ZERO_RESULTS') {
+                throw new Error("Маршрут не найден. Возможно, между точками нет автомобильной дороги. Пожалуйста, выберите другие адреса.");
             }
-             if (response.status === 404 && data?.message?.includes("point not found")) {
-                throw new Error("Ошибка 404: Не удалось найти одну из точек на дороге. Попробуйте выбрать точки ближе к проезжей части.");
-            }
-            const errorMessage = data?.message || `Ошибка API Яндекс Маршрутов: ${response.status}.`;
+            const errorMessage = data.error_message || `Неизвестная ошибка от API Google Маршрутов (Статус: ${data.status}).`;
             throw new Error(errorMessage);
         }
 
         const route = data.routes?.[0];
-        if (!route) {
-          console.error("Yandex API did not return a route. Full response:", JSON.stringify(data, null, 2));
-           if (data?.message) {
-               throw new Error(`Маршрут не найден: ${data.message}. Попробуйте другие адреса.`);
-           }
-          throw new Error("Маршрут не найден. Возможно, между точками нет автомобильной дороги. Пожалуйста, выберите другие адреса.");
+        if (!route || !route.legs?.[0]) {
+          console.error("Google API did not return a valid route. Full response:", JSON.stringify(data, null, 2));
+          throw new Error("Маршрут не найден. Пожалуйста, попробуйте другие адреса.");
         }
         
-        const distanceMeters = route.summary?.distance?.value;
-        return { distance: distanceMeters ? distanceMeters / 1000 : 0, isEstimate: false };
+        const distanceMeters = route.legs[0].distance.value;
+        const encodedPolyline = route.overview_polyline.points;
+        const geometry = decode(encodedPolyline);
+
+        return { distance: distanceMeters / 1000, geometry };
     } catch (error) {
         console.error("Routing error:", error);
         if (error instanceof Error) {
@@ -103,6 +116,7 @@ const CalculateDeliveryPriceOutputSchema = z.object({
   distanceKm: z.number().describe('Расстояние между точками отправления и доставки в километрах.'),
   priceTl: z.number().describe('Рассчитанная стоимость доставки в рублях.'),
   pricingDetails: z.string().describe('Подробности о том, как была рассчитана цена на основе тарифных планов.'),
+  routeGeometry: z.array(z.array(z.number())).describe('Геометрия маршрута для отрисовки на карте.'),
 });
 export type CalculateDeliveryPriceOutput = z.infer<typeof CalculateDeliveryPriceOutputSchema>;
 
@@ -111,11 +125,6 @@ export async function calculateDeliveryPrice(input: CalculateDeliveryPriceInput)
   return calculateDeliveryPriceFlow(input);
 }
 
-/**
- * Parses a range string like "0-3 km" or "10+ km" into a [min, max] tuple.
- * @param rangeStr The string to parse.
- * @returns A tuple [min, max].
- */
 function parseRange(rangeStr: string): [number, number] {
     const cleaned = rangeStr.replace(/km|\s/g, '');
     if (cleaned.includes('+')) {
@@ -143,11 +152,10 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
         throw new Error('Не удалось получить координаты для одного или обоих адресов.');
     }
 
-    const { distance: rawDistanceKm, isEstimate } = await getRouteDistance(pickupCoords, dropoffCoords);
+    const { distance: rawDistanceKm, geometry } = await getGoogleRoute(pickupCoords, dropoffCoords);
     
     const distanceKm = parseFloat(rawDistanceKm.toFixed(2));
 
-    // --- Price calculation logic ---
     let calculatedPrice = 0;
     let matchedTier: PricingTier | null = null;
 
@@ -163,10 +171,6 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
     }
     
     let pricingDetails = '';
-
-    if (isEstimate) {
-        pricingDetails += '(Приблизительно) ';
-    }
 
     if (matchedTier) {
         pricingDetails += `Расстояние ${distanceKm} км соответствует тарифу "${matchedTier.range}", поэтому стоимость составляет ${calculatedPrice} руб.`;
@@ -184,6 +188,7 @@ const calculateDeliveryPriceFlow = ai.defineFlow(
         distanceKm: distanceKm,
         priceTl: calculatedPrice,
         pricingDetails: pricingDetails,
+        routeGeometry: geometry,
     };
   }
 );

@@ -1,22 +1,24 @@
 {
-  "name": "Hızlı Kurye",
-  "short_name": "Hızlı Kurye",
-  "description": "Hızlı Kurye - Your fast and reliable delivery partner.",
+  "name": "Быстрый Курьер",
+  "short_name": "Курьер",
+  "description": "Быстрый Курьер - Ваш быстрый и надежный партнер по доставке.",
   "icons": [
     {
-      "src": "/android-chrome-192x192.png",
+      "src": "/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "/android-chrome-512x512.png",
+      "src": "/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
-  "theme_color": "#29ABE2",
-  "background_color": "#F0F2F5",
+  "theme_color": "#FFFFFF",
+  "background_color": "#FFFFFF",
+  "start_url": "/",
   "display": "standalone",
-  "scope": "/",
-  "start_url": "/"
+  "orientation": "portrait"
 }
