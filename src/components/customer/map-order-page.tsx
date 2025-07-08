@@ -183,7 +183,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
     if (priceInfo) {
          return (
             <>
-              <CardHeader className="p-3">
+              <CardHeader className="p-3 shrink-0">
                 <div className="flex items-center gap-2">
                    <Button variant="ghost" size="icon" onClick={() => { setPriceInfo(null); setDropoff(null); setAddressFocus('dropoff'); }}>
                         <ArrowLeft />
@@ -191,8 +191,8 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                    <CardTitle>Подтверждение заказа</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 overflow-y-auto no-scrollbar p-0">
-                 <div className="space-y-2 p-3">
+              <CardContent className="flex-1 overflow-y-auto no-scrollbar p-3 pt-0">
+                 <div className="space-y-2">
                     <div className="flex items-center justify-between rounded-lg bg-muted p-3">
                       <div>
                         <div className="text-sm text-muted-foreground">Расстояние</div>
@@ -212,7 +212,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                     <div className="space-y-1 pt-2"><label className="px-1 text-sm font-medium">Примечание (необязательно)</label><div className="relative"><MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Textarea placeholder="Что-то важное..." value={description} onChange={e => setDescription(e.target.value)} className="pl-10" /></div></div>
                  </div>
               </CardContent>
-              <CardFooter className="p-3">
+              <CardFooter className="p-3 shrink-0">
                 <Button className="w-full" onClick={handleConfirmOrder} disabled={isLoading}>
                   {isLoading ? <Loader2 className="animate-spin" /> : <><Rocket className="mr-2"/>Подтвердить и заказать</> }
                 </Button>
@@ -352,8 +352,8 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                         }, {})).map(([kind, items]) => (
                             <div key={kind}>
                                 <p className="p-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/50">{kind}</p>
-                                {items.map((s) => (
-                                    <div key={s.address + s.coords.join(',')} onClick={() => handleSelectAddress(s)} className="cursor-pointer p-2 pl-4 text-sm hover:bg-muted">
+                                {items.map((s, index) => (
+                                    <div key={s.address + s.coords.join(',') + index} onClick={() => handleSelectAddress(s)} className="cursor-pointer p-2 pl-4 text-sm hover:bg-muted">
                                     {s.address}
                                     </div>
                                 ))}
@@ -414,7 +414,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
             <Button variant="secondary" onClick={onDone} className="pointer-events-auto absolute top-4 left-4 z-10 hidden md:flex">
               <ArrowLeft className="mr-2"/> К заказам
             </Button>
-             <div className="pointer-events-auto mt-14 flex w-full max-w-md flex-1 flex-col self-center md:mt-4 md:self-start">
+             <div className="pointer-events-auto flex w-full max-w-md flex-1 flex-col self-center md:self-start md:mt-12">
                  <Card className="flex flex-1 flex-col overflow-hidden">
                     {renderPanel()}
                  </Card>
