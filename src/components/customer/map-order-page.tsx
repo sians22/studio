@@ -98,19 +98,16 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   };
 
   const handleSelectAddress = (address: Address) => {
+    setSearchQuery('');
+    setSuggestions([]);
+    setNoResults(false);
     if (addressFocus === 'pickup') {
       setPickup(address);
       setAddressFocus('dropoff');
-      if (dropoff) {
-          setDropoff(null);
-          setPriceInfo(null);
-      }
+      setTimeout(() => inputRef.current?.focus(), 100);
     } else {
       setDropoff(address);
     }
-    setSearchQuery('');
-    setSuggestions([]);
-    inputRef.current?.focus();
   };
 
   useEffect(() => {
@@ -227,64 +224,138 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 <CardTitle>Создать заказ</CardTitle>
                 <CardDescription>Укажите адреса отправления и назначения.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 space-y-2 overflow-y-auto no-scrollbar">
+            <CardContent className="flex flex-1 flex-col space-y-2 overflow-hidden">
+                {/* Pickup Field */}
                 <div 
-                    className={cn("flex items-center gap-3 rounded-md border p-2 cursor-pointer", addressFocus === 'pickup' && 'ring-2 ring-primary')}
-                    onClick={() => setAddressFocus('pickup')}
+                    className={cn(
+                        "flex shrink-0 items-center gap-3 rounded-md border p-2", 
+                        addressFocus === 'pickup' && 'ring-2 ring-primary'
+                    )}
+                    onClick={() => {
+                        if (addressFocus !== 'pickup') {
+                            setAddressFocus('pickup');
+                            setSearchQuery(pickup?.address || '');
+                        }
+                    }}
                 >
                     <MapPin className="h-5 w-5 text-green-500" />
-                    <div className="flex-1 text-sm">{pickup ? pickup.address : <span className="text-muted-foreground">Откуда?</span>}</div>
-                    {pickup && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setPickup(null); setPriceInfo(null); setDropoff(null); setAddressFocus('pickup');}}><X className="h-4 w-4"/></Button>}
-                </div>
-                <div 
-                    className={cn("flex items-center gap-3 rounded-md border p-2 cursor-pointer", addressFocus === 'dropoff' && 'ring-2 ring-primary')}
-                    onClick={() => setAddressFocus('dropoff')}
-                >
-                    <MapPin className="h-5 w-5 text-red-500" />
-                    <div className="flex-1 text-sm">{dropoff ? dropoff.address : <span className="text-muted-foreground">Куда?</span>}</div>
-                    {dropoff && <Button variant="ghost" size="icon" className="h-6 w-6" onClick={(e) => { e.stopPropagation(); setDropoff(null); setPriceInfo(null); setAddressFocus('dropoff');}}><X className="h-4 w-4"/></Button>}
+                    {addressFocus === 'pickup' ? (
+                        <Input
+                            ref={inputRef}
+                            placeholder="Откуда?"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="h-auto flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            autoFocus
+                        />
+                    ) : (
+                        <div className="flex-1 cursor-pointer text-sm">
+                            {pickup ? <span className="truncate">{pickup.address}</span> : <span className="text-muted-foreground">Откуда?</span>}
+                        </div>
+                    )}
+                    {pickup && (
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 shrink-0" 
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setPickup(null); 
+                                setPriceInfo(null);
+                                setDropoff(null);
+                                setSearchQuery('');
+                                setAddressFocus('pickup');
+                            }}
+                        >
+                            <X className="h-4 w-4"/>
+                        </Button>
+                    )}
                 </div>
 
-                <div className="relative pt-2">
-                    <Input
-                        ref={inputRef}
-                        placeholder={addressFocus === 'pickup' ? "Поиск адреса отправления..." : "Поиск адреса назначения..."}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        autoFocus
-                    />
-                    {isSearching && <Loader2 className="absolute right-3 top-[18px] h-4 w-4 animate-spin text-muted-foreground" />}
+                {/* Dropoff Field */}
+                <div 
+                    className={cn(
+                        "flex shrink-0 items-center gap-3 rounded-md border p-2", 
+                        addressFocus === 'dropoff' && 'ring-2 ring-primary'
+                    )}
+                    onClick={() => {
+                        if (addressFocus !== 'dropoff') {
+                            setAddressFocus('dropoff');
+                            setSearchQuery(dropoff?.address || '');
+                        }
+                    }}
+                >
+                    <MapPin className="h-5 w-5 text-red-500" />
+                    {addressFocus === 'dropoff' ? (
+                        <Input
+                            ref={inputRef}
+                            placeholder="Куда?"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="h-auto flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+                            autoFocus
+                        />
+                    ) : (
+                        <div className="flex-1 cursor-pointer text-sm">
+                            {dropoff ? <span className="truncate">{dropoff.address}</span> : <span className="text-muted-foreground">Куда?</span>}
+                        </div>
+                    )}
+                     {dropoff && (
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-6 w-6 shrink-0" 
+                            onClick={(e) => { 
+                                e.stopPropagation(); 
+                                setDropoff(null); 
+                                setPriceInfo(null);
+                                setSearchQuery('');
+                                setAddressFocus('dropoff');
+                            }}
+                        >
+                            <X className="h-4 w-4"/>
+                        </Button>
+                    )}
                 </div>
                 
-                {suggestions.length > 0 && (
-                <div className="mt-2 rounded-md border">
-                    {Object.entries(suggestions.reduce((acc: Record<string, SearchAddressOutput>, suggestion) => {
-                        const kindKey = suggestion.kind || 'other';
-                        const kind = KIND_TRANSLATIONS[kindKey] || KIND_TRANSLATIONS['other'];
-                        if (!acc[kind]) acc[kind] = [];
-                        acc[kind].push(suggestion);
-                        return acc;
-                    }, {})).map(([kind, items]) => (
-                        <div key={kind}>
-                            <p className="p-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider bg-muted/50">{kind}</p>
-                            {items.map((s) => (
-                                <div key={s.address + s.coords.join(',')} onClick={() => handleSelectAddress(s)} className="cursor-pointer p-2 pl-4 text-sm hover:bg-muted">
-                                {s.address}
-                                </div>
-                            ))}
+                {/* Suggestions List */}
+                <div className="flex-1 overflow-y-auto no-scrollbar pt-2">
+                    {isSearching && (
+                        <div className="flex items-center justify-center p-4 text-muted-foreground">
+                            <Loader2 className="h-5 w-5 animate-spin mr-2"/>
+                            <span>Идет поиск...</span>
                         </div>
-                    ))}
-                </div>
-                )}
-                {noResults && !isSearching && (
-                    <div className="mt-2 text-center text-sm text-muted-foreground p-4 border rounded-md">
-                        По вашему запросу ничего не найдено.
+                    )}
+                    {suggestions.length > 0 && !isSearching && (
+                    <div className="rounded-md border">
+                        {Object.entries(suggestions.reduce((acc: Record<string, SearchAddressOutput>, suggestion) => {
+                            const kindKey = suggestion.kind || 'other';
+                            const kind = KIND_TRANSLATIONS[kindKey] || KIND_TRANSLATIONS['other'];
+                            if (!acc[kind]) acc[kind] = [];
+                            acc[kind].push(suggestion);
+                            return acc;
+                        }, {})).map(([kind, items]) => (
+                            <div key={kind}>
+                                <p className="p-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/50">{kind}</p>
+                                {items.map((s) => (
+                                    <div key={s.address + s.coords.join(',')} onClick={() => handleSelectAddress(s)} className="cursor-pointer p-2 pl-4 text-sm hover:bg-muted">
+                                    {s.address}
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
                     </div>
-                )}
+                    )}
+                    {noResults && !isSearching && (
+                        <div className="mt-2 rounded-md border p-4 text-center text-sm text-muted-foreground">
+                            По вашему запросу ничего не найдено.
+                        </div>
+                    )}
+                </div>
             </CardContent>
              {isLoading && (
                 <CardFooter>
-                    <div className="flex items-center justify-center w-full text-muted-foreground">
+                    <div className="flex w-full items-center justify-center text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin mr-2"/>
                         <span>Расчет маршрута...</span>
                     </div>
@@ -296,9 +367,9 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   
   if (isConfirmed) {
          return (
-             <div className="relative h-full w-full flex items-center justify-center p-4" style={{height: "calc(100vh - 73px)"}}>
-                <Card className="max-w-md w-full">
-                    <CardContent className="pt-6 flex flex-col items-center justify-center text-center">
+             <div className="relative flex h-full w-full items-center justify-center p-4" style={{height: "calc(100vh - 73px)"}}>
+                <Card className="w-full max-w-md">
+                    <CardContent className="flex flex-col items-center justify-center pt-6 text-center">
                         <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
                         <h2 className="text-2xl font-bold mb-2">Заказ создан!</h2>
                         <p className="text-muted-foreground mb-6">Ваш заказ успешно размещен. Курьер будет назначен в ближайшее время.</p>
