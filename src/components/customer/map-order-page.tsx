@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { YMaps, Map, Placemark } from '@pbe/react-yandex-maps';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { GoogleMap, useLoadScript, Marker, Polyline } from '@react-google-maps/api';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useToast } from '@/hooks/use-toast';
 import { useOrders } from '@/context/order-context';
@@ -21,14 +21,22 @@ import { cn } from '@/lib/utils';
 type AddressFocus = 'pickup' | 'dropoff';
 type Address = { address: string; coords: [number, number]; kind?: string };
 
-const KIND_TRANSLATIONS: Record<string, string> = {
-    house: 'Здания и адреса',
-    street: 'Улицы',
-    metro: 'Станции метро',
-    district: 'Районы',
-    locality: 'Населенные пункты',
-    other: 'Другое'
+const mapContainerStyle = {
+  width: '100%',
+  height: '100%',
 };
+
+const mapOptions = {
+  disableDefaultUI: true,
+  zoomControl: true,
+  clickableIcons: false,
+};
+
+const LIBRARIES: ('places' | 'drawing' | 'geometry' | 'visualization')[] = ['places'];
+
+const MARKER_ICON_GREEN = `data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3e%3cpath fill='%2316a34a' d='M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67a24 24 0 01-35.464 0zM192 272a80 80 0 100-160 80 80 0 000 160z'/%3e%3c/svg%3e`;
+const MARKER_ICON_RED = `data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3e%3cpath fill='%23dc2626' d='M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67a24 24 0 01-35.464 0zM192 272a80 80 0 100-160 80 80 0 000 160z'/%3e%3c/svg%3e`;
+
 
 export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   const { toast } = useToast();
@@ -37,7 +45,6 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   const { tiers: pricingTiers } = usePricing();
   
   const [addressFocus, setAddressFocus] = useState<AddressFocus>('pickup');
-
   const [pickup, setPickup] = useState<Address | null>(null);
   const [dropoff, setDropoff] = useState<Address | null>(null);
   const [priceInfo, setPriceInfo] = useState<CalculateDeliveryPriceOutput | null>(null);
@@ -57,6 +64,17 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
 
   const mapRef = useRef<any>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+  const { isLoaded, loadError } = useLoadScript({
+    googleMapsApiKey: apiKey,
+    libraries: LIBRARIES,
+    language: 'ru',
+  });
+
+  const onMapLoad = useCallback((map: any) => {
+    mapRef.current = map;
+  }, []);
 
   useEffect(() => {
     if (debouncedSearchQuery) {
@@ -66,9 +84,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
       searchAddress({ query: debouncedSearchQuery })
         .then(results => {
           setSuggestions(results);
-          if (results.length === 0) {
-            setNoResults(true);
-          }
+          if (results.length === 0) setNoResults(true);
         })
         .catch((err) => toast({ variant: 'destructive', title: 'Ошибка поиска адреса', description: err.message }))
         .finally(() => setIsSearching(false));
@@ -78,10 +94,9 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
     }
   }, [debouncedSearchQuery, toast]);
   
-  const handleMapClick = async (e: any) => {
-    if (isLoading) return;
-    const coords: [number, number] = e.get('coords');
-    if (!coords) return;
+  const handleMapClick = async (e: google.maps.MapMouseEvent) => {
+    if (isLoading || !e.latLng) return;
+    const coords: [number, number] = [e.latLng.lat(), e.latLng.lng()];
 
     setIsLoading(true);
     try {
@@ -114,10 +129,8 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
   useEffect(() => {
     const calculate = async () => {
       if (!pickup || !dropoff) return;
-
       setIsLoading(true);
       setPriceInfo(null);
-
       try {
         const result = await calculateDeliveryPrice({
           pickupAddress: pickup.address,
@@ -137,7 +150,20 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
       }
     };
     calculate();
-  }, [pickup, dropoff, pricingTiers, toast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pickup, dropoff]);
+
+  useEffect(() => {
+    if (mapRef.current && pickup && dropoff) {
+        const bounds = new window.google.maps.LatLngBounds();
+        bounds.extend(new window.google.maps.LatLng(pickup.coords[0], pickup.coords[1]));
+        bounds.extend(new window.google.maps.LatLng(dropoff.coords[0], dropoff.coords[1]));
+        mapRef.current.fitBounds(bounds);
+    } else if(mapRef.current && pickup) {
+        mapRef.current.panTo({ lat: pickup.coords[0], lng: pickup.coords[1] });
+        mapRef.current.setZoom(15);
+    }
+  }, [pickup, dropoff, priceInfo])
 
   const handleConfirmOrder = () => {
     if (!pickup || !dropoff || !priceInfo || !user) return;
@@ -158,27 +184,23 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
     setIsConfirmed(true);
   };
   
-  const mapState = useMemo(() => {
-    const boundsOptions = { checkZoomRange: true, zoomMargin: 35 };
-    if (pickup && dropoff) {
-      if (mapRef.current) setTimeout(() => mapRef.current.setBounds([pickup.coords, dropoff.coords], boundsOptions), 100);
-      return { center: undefined, zoom: undefined, bounds: [pickup.coords, dropoff.coords] };
-    }
-    if (dropoff) return { center: dropoff.coords, zoom: 15, bounds: undefined };
-    if (pickup) return { center: pickup.coords, zoom: 15, bounds: undefined };
-    return { center: [43.318, 45.698], zoom: 12, bounds: undefined };
-  }, [pickup, dropoff]);
-  
-  const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY;
+  const center = useMemo(() => ({ lat: 43.318, lng: 45.698 }), []); // Grozny
 
-  if (!apiKey || apiKey === 'YOUR_YANDEX_MAP_API_KEY_HERE') {
+  const polylinePath = useMemo(() => {
+    if (!priceInfo?.routeGeometry) return [];
+    return priceInfo.routeGeometry.map(coords => ({ lat: coords[0], lng: coords[1] }));
+  }, [priceInfo]);
+
+  if (loadError || (!isLoaded && apiKey==="") || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
     return (
-        <div className="flex h-screen flex-col items-center justify-center p-4 text-center">
+        <div className="flex h-full flex-col items-center justify-center p-4 text-center">
             <Card className="max-w-sm">
                 <CardHeader>
-                    <CardTitle className="text-destructive">Ошибка Конфигурации</CardTitle>
+                    <CardTitle className="text-destructive">Ошибка Конфигурации Карты</CardTitle>
                     <CardDescription>
-                       API Anahtarı eksik. Lütfen sol taraftaki dosya gezgininden `.env` dosyasını açın ve `YOUR_YANDEX_MAP_API_KEY_HERE` yazan yeri kendi Yandex Haritalar API anahtarınızla değiştirin.
+                       Ключ API Google Карт не настроен или недействителен. Пожалуйста, откройте файл `.env` и убедитесь, что `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` корректно задан.
+                       <br/><br/>
+                       Также убедитесь, что в Google Cloud Console для вашего ключа включены API: **Geocoding API**, **Directions API** и **Maps JavaScript API**.
                     </CardDescription>
                 </CardHeader>
             </Card>
@@ -186,11 +208,30 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
     );
   }
 
+  if (!isLoaded) {
+    return <div className="flex h-full items-center justify-center"><Loader2 className="h-8 w-8 animate-spin"/></div>
+  }
+
   const renderPanel = () => {
+    if (isConfirmed) {
+         return (
+            <div className="relative flex h-full w-full items-center justify-center p-4">
+               <Card className="w-full max-w-md">
+                   <CardContent className="flex flex-col items-center justify-center pt-6 text-center">
+                       <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
+                       <h2 className="text-2xl font-bold mb-2">Заказ создан!</h2>
+                       <p className="text-muted-foreground mb-6">Ваш заказ успешно размещен. Курьер будет назначен в ближайшее время.</p>
+                       <Button className="w-full" onClick={onDone}>К моим заказам</Button>
+                   </CardContent>
+               </Card>
+           </div>
+         );
+    }
+
     if (priceInfo) {
          return (
             <div className="flex h-full flex-col">
-              <CardHeader className="p-4">
+              <CardHeader className="flex-shrink-0 p-4">
                 <div className="flex items-center gap-2">
                    <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8" onClick={() => { setPriceInfo(null); setDropoff(null); setAddressFocus('dropoff'); }}>
                         <ArrowLeft />
@@ -226,7 +267,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                    </div>
                  </div>
               </div>
-              <CardFooter className="p-4">
+              <CardFooter className="flex-shrink-0 p-4">
                 <Button className="w-full" onClick={handleConfirmOrder} disabled={isLoading}>
                   {isLoading ? <Loader2 className="animate-spin" /> : <><Rocket className="mr-2"/>Подтвердить и заказать</> }
                 </Button>
@@ -237,198 +278,79 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
     
     return (
         <div className="flex h-full flex-col">
-            <CardHeader>
+            <CardHeader className="flex-shrink-0">
                 <CardTitle>Создать заказ</CardTitle>
                 <CardDescription>Укажите адреса отправления и назначения.</CardDescription>
             </CardHeader>
             <div className="flex flex-1 flex-col space-y-2 overflow-hidden px-6 pb-6">
-                {/* Pickup Field */}
                 <div 
-                    className={cn(
-                        "flex shrink-0 cursor-text items-center gap-2 rounded-md border p-2",
-                        addressFocus === 'pickup' && 'ring-2 ring-primary'
-                    )}
-                    onClick={() => {
-                        if (addressFocus !== 'pickup') {
-                            setAddressFocus('pickup');
-                            setSearchQuery(pickup?.address || '');
-                            setTimeout(() => inputRef.current?.focus(), 100);
-                        }
-                    }}
+                    className={cn("flex shrink-0 cursor-text items-center gap-3 rounded-md border p-2", addressFocus === 'pickup' && 'ring-2 ring-primary')}
+                    onClick={() => { if (addressFocus !== 'pickup') { setAddressFocus('pickup'); setSearchQuery(pickup?.address || ''); setTimeout(() => inputRef.current?.focus(), 100); } }}
                 >
                      <MapPin className="h-5 w-5 shrink-0 text-green-500" />
                     {addressFocus === 'pickup' ? (
-                        <div className="relative flex-1">
-                            <Input
-                                ref={inputRef}
-                                placeholder="Откуда?"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                className="h-auto w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                                autoFocus
-                            />
-                        </div>
+                        <Input ref={inputRef} placeholder="Откуда?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-auto w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0" autoFocus />
                     ) : (
-                        <div className="flex-1 text-sm">
-                            {pickup ? <span className="truncate">{pickup.address}</span> : <span className="text-muted-foreground">Откуда?</span>}
-                        </div>
+                        <div className="flex-1 text-sm">{pickup ? <span className="truncate">{pickup.address}</span> : <span className="text-muted-foreground">Откуда?</span>}</div>
                     )}
-                    {pickup && (
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 shrink-0" 
-                            onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setPickup(null); 
-                                setPriceInfo(null);
-                                setDropoff(null);
-                                setSearchQuery('');
-                                setAddressFocus('pickup');
-                            }}
-                        >
-                            <X className="h-4 w-4"/>
-                        </Button>
-                    )}
+                    {pickup && (<Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={(e) => { e.stopPropagation(); setPickup(null); setPriceInfo(null); setDropoff(null); setSearchQuery(''); setAddressFocus('pickup'); }}><X className="h-4 w-4"/></Button>)}
                 </div>
 
-                {/* Dropoff Field */}
                 <div 
-                    className={cn(
-                        "flex shrink-0 cursor-text items-center gap-2 rounded-md border p-2",
-                        addressFocus === 'dropoff' && 'ring-2 ring-primary'
-                    )}
-                    onClick={() => {
-                        if (addressFocus !== 'dropoff') {
-                            setAddressFocus('dropoff');
-                            setSearchQuery(dropoff?.address || '');
-                            setTimeout(() => inputRef.current?.focus(), 100);
-                        }
-                    }}
+                    className={cn("flex shrink-0 cursor-text items-center gap-3 rounded-md border p-2", addressFocus === 'dropoff' && 'ring-2 ring-primary')}
+                     onClick={() => { if (addressFocus !== 'dropoff') { setAddressFocus('dropoff'); setSearchQuery(dropoff?.address || ''); setTimeout(() => inputRef.current?.focus(), 100); } }}
                 >
                     <MapPin className="h-5 w-5 shrink-0 text-red-500" />
                     {addressFocus === 'dropoff' ? (
-                        <div className="relative flex-1">
-                           <Input
-                               ref={inputRef}
-                               placeholder="Куда?"
-                               value={searchQuery}
-                               onChange={(e) => setSearchQuery(e.target.value)}
-                               className="h-auto w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                               autoFocus
-                           />
-                       </div>
+                       <Input ref={inputRef} placeholder="Куда?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-auto w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0" autoFocus />
                     ) : (
-                        <div className="flex-1 text-sm">
-                            {dropoff ? <span className="truncate">{dropoff.address}</span> : <span className="text-muted-foreground">Куда?</span>}
-                        </div>
+                        <div className="flex-1 text-sm">{dropoff ? <span className="truncate">{dropoff.address}</span> : <span className="text-muted-foreground">Куда?</span>}</div>
                     )}
-                     {dropoff && (
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-6 w-6 shrink-0" 
-                            onClick={(e) => { 
-                                e.stopPropagation(); 
-                                setDropoff(null); 
-                                setPriceInfo(null);
-                                setSearchQuery('');
-                                setAddressFocus('dropoff');
-                            }}
-                        >
-                            <X className="h-4 w-4"/>
-                        </Button>
-                    )}
+                     {dropoff && (<Button variant="ghost" size="icon" className="h-6 w-6 shrink-0" onClick={(e) => { e.stopPropagation(); setDropoff(null); setPriceInfo(null); setSearchQuery(''); setAddressFocus('dropoff'); }}><X className="h-4 w-4"/></Button>)}
                 </div>
                 
-                {/* Suggestions List */}
                 <div className="flex-1 overflow-y-auto pt-2">
-                    {isSearching && (
-                        <div className="flex items-center justify-center p-4 text-muted-foreground">
-                            <Loader2 className="h-5 w-5 animate-spin mr-2"/>
-                            <span>Идет поиск...</span>
-                        </div>
-                    )}
+                    {isSearching && (<div className="flex items-center justify-center p-4 text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2"/><span>Идет поиск...</span></div>)}
                     {suggestions.length > 0 && !isSearching && (
-                    <div className="rounded-md border">
-                        {Object.entries(suggestions.reduce((acc: Record<string, SearchAddressOutput>, suggestion) => {
-                            const kindKey = suggestion.kind || 'other';
-                            const kind = KIND_TRANSLATIONS[kindKey] || KIND_TRANSLATIONS['other'];
-                            if (!acc[kind]) acc[kind] = [];
-                            acc[kind].push(suggestion);
-                            return acc;
-                        }, {})).map(([kind, items]) => (
-                            <div key={kind}>
-                                <p className="p-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground bg-muted/50">{kind}</p>
-                                {items.map((s, index) => (
-                                    <div key={s.address + s.coords.join(',') + index} onClick={() => handleSelectAddress(s)} className="cursor-pointer p-2 pl-4 text-sm hover:bg-muted">
-                                    {s.address}
-                                    </div>
-                                ))}
-                            </div>
+                      <div className="rounded-md border">
+                        {suggestions.map((s, index) => (
+                          <div key={`${s.address}-${index}`} onClick={() => handleSelectAddress(s)} className="cursor-pointer p-2 pl-4 text-sm hover:bg-muted">{s.address}</div>
                         ))}
-                    </div>
+                      </div>
                     )}
-                    {noResults && !isSearching && (
-                        <div className="mt-2 rounded-md border p-4 text-center text-sm text-muted-foreground">
-                            По вашему запросу ничего не найдено.
-                        </div>
-                    )}
+                    {noResults && !isSearching && (<div className="mt-2 rounded-md border p-4 text-center text-sm text-muted-foreground">По вашему запросу ничего не найдено.</div>)}
                 </div>
             </div>
-             {isLoading && !priceInfo && (
-                <CardFooter>
-                    <div className="flex w-full items-center justify-center text-muted-foreground">
-                        <Loader2 className="h-5 w-5 animate-spin mr-2"/>
-                        <span>Расчет маршрута...</span>
-                    </div>
-                </CardFooter>
-            )}
+             {isLoading && !priceInfo && (<CardFooter><div className="flex w-full items-center justify-center text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin mr-2"/><span>Расчет маршрута...</span></div></CardFooter>)}
         </div>
     )
   }
-  
-  if (isConfirmed) {
-         return (
-             <div className="relative flex h-full w-full items-center justify-center p-4" style={{height: "calc(100vh - 73px)"}}>
-                <Card className="w-full max-w-md">
-                    <CardContent className="flex flex-col items-center justify-center pt-6 text-center">
-                        <CheckCircle className="h-16 w-16 text-green-500 mb-4" />
-                        <h2 className="text-2xl font-bold mb-2">Заказ создан!</h2>
-                        <p className="text-muted-foreground mb-6">Ваш заказ успешно размещен. Курьер будет назначен в ближайшее время.</p>
-                        <Button className="w-full" onClick={onDone}>К моим заказам</Button>
-                    </CardContent>
-                </Card>
-            </div>
-         );
-    }
-    
+
   return (
-    <YMaps query={{ apikey: apiKey, lang: 'ru_RU' }}>
-      <div className="relative h-full w-full" style={{height: "calc(100vh - 73px)"}}>
-        <Map
-          instanceRef={mapRef}
-          state={mapState}
-          width="100%"
-          height="100%"
-          className={cn("absolute inset-0", isLoading && "cursor-wait")}
-          onClick={handleMapClick}
-        >
-          {pickup && <Placemark geometry={pickup.coords} options={{preset: 'islands#greenDotIconWithCaption'}} properties={{iconCaption: 'Отсюда'}} />}
-          {dropoff && <Placemark geometry={dropoff.coords} options={{preset: 'islands#redDotIconWithCaption'}} properties={{iconCaption: 'Сюда'}} />}
-        </Map>
-        
-        <div className="pointer-events-none absolute inset-0 flex flex-col p-2 md:p-4">
-            <Button variant="secondary" onClick={onDone} className="pointer-events-auto absolute top-4 left-4 z-10 hidden md:flex">
-              <ArrowLeft className="mr-2"/> К заказам
-            </Button>
-             <div className="pointer-events-auto relative flex w-full max-w-md flex-1 flex-col self-center md:self-start md:mt-12">
-                 <Card className="flex h-full flex-col overflow-hidden">
-                    {renderPanel()}
-                 </Card>
-            </div>
-        </div>
+    <div className="relative h-full w-full" style={{height: "calc(100vh - 73px)"}}>
+      <GoogleMap
+        mapContainerStyle={mapContainerStyle}
+        center={center}
+        zoom={12}
+        options={mapOptions}
+        onLoad={onMapLoad}
+        onClick={handleMapClick}
+      >
+        {pickup && <Marker position={{ lat: pickup.coords[0], lng: pickup.coords[1] }} icon={{ url: MARKER_ICON_GREEN, scaledSize: new window.google.maps.Size(30, 40) }} />}
+        {dropoff && <Marker position={{ lat: dropoff.coords[0], lng: dropoff.coords[1] }} icon={{ url: MARKER_ICON_RED, scaledSize: new window.google.maps.Size(30, 40) }} />}
+        {polylinePath.length > 0 && <Polyline path={polylinePath} options={{ strokeColor: '#1a73e8', strokeWeight: 5, strokeOpacity: 0.8 }} />}
+      </GoogleMap>
+      
+      <div className="pointer-events-none absolute inset-0 flex flex-col p-2 md:p-4">
+          <Button variant="secondary" onClick={onDone} className="pointer-events-auto absolute top-4 left-4 z-10 hidden md:flex">
+            <ArrowLeft className="mr-2"/> К заказам
+          </Button>
+           <div className="pointer-events-auto relative flex w-full max-w-md flex-1 flex-col self-center md:self-start md:mt-12">
+               <Card className="flex h-full max-h-[85vh] flex-col overflow-hidden">
+                  {renderPanel()}
+               </Card>
+          </div>
       </div>
-    </YMaps>
+    </div>
   );
 }

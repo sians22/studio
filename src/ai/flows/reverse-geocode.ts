@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Flow to get an address from coordinates using Yandex Maps Geocoder (reverse geocoding).
+ * @fileOverview Flow to get an address from coordinates using Google Maps Geocoding API (reverse geocoding).
  *
  * - getAddressFromCoords - A function that performs reverse geocoding.
  * - ReverseGeocodeInput - The input type for the getAddressFromCoords function.
@@ -15,7 +15,6 @@ const ReverseGeocodeInputSchema = z.object({
 });
 export type ReverseGeocodeInput = z.infer<typeof ReverseGeocodeInputSchema>;
 
-// The output will be a single address or null if not found
 const ReverseGeocodeOutputSchema = z.object({
     address: z.string().describe('Полный текст адреса.'),
     coords: z.array(z.number()).length(2).describe('Координаты адреса [широта, долгота].')
@@ -34,38 +33,32 @@ const reverseGeocodeFlow = ai.defineFlow(
     outputSchema: ReverseGeocodeOutputSchema,
   },
   async ({ coords }) => {
-    // Use the single public map key for all Yandex services
-    const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY; 
-    if (!apiKey || apiKey === 'YOUR_YANDEX_MAP_API_KEY_HERE') {
-        console.error("Yandex API key is not set in the .env file.");
-        throw new Error("Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что NEXT_PUBLIC_YANDEX_MAP_API_KEY задан в .env и имеет права на 'JavaScript API and HTTP Geocoder'.");
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY; 
+    if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+        console.error("Google Maps API key is not set in the .env file.");
+        throw new Error("Ключ API Google Карт не настроен. Пожалуйста, убедитесь, что NEXT_PUBLIC_GOOGLE_MAPS_API_KEY задан в .env и имеет права на 'Geocoding API'.");
     }
     
-    // Yandex geocoder expects lon,lat for coordinates
     const [lat, lon] = coords;
-    // Added `kind=house` to get the most precise address possible
-    const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${lon},${lat}&format=json&lang=ru_RU&results=1&kind=house`;
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lon}&key=${apiKey}&language=ru&result_type=street_address|route|locality|political`;
     
     try {
       const response = await fetch(url);
-      if (!response.ok) {
-        console.error('Error fetching from Yandex Geocoder (reverse):', response.statusText, await response.text());
-        return null;
-      }
       const data = await response.json();
       
-      const featureMember = data.response?.GeoObjectCollection?.featureMember?.[0];
+      if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+        console.error('Error fetching from Google Geocoding API (reverse):', data.status, data.error_message);
+        return null;
+      }
+      
+      const firstResult = data.results?.[0];
 
-      if (featureMember) {
-        const geoObject = featureMember.GeoObject;
-        if (!geoObject) return null;
+      if (firstResult) {
+        const address = firstResult.formatted_address;
+        const location = firstResult.geometry?.location;
+        if (!address || !location) return null;
         
-        const address = geoObject.metaDataProperty?.GeocoderMetaData?.text;
-        const pos = geoObject.Point?.pos;
-        if (!address || !pos) return null;
-        
-        const [resLon, resLat] = pos.split(' ').map(Number);
-        return { address, coords: [resLat, resLon] };
+        return { address, coords: [location.lat, location.lng] };
       }
       
       return null;

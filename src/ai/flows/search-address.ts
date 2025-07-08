@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Flow to search for an address using Yandex Maps Geocoder.
+ * @fileOverview Flow to search for an address using Google Maps Geocoding API.
  *
  * - searchAddress - A function that searches for an address.
  * - SearchAddressInput - The input type for the searchAddress function.
@@ -35,51 +35,41 @@ const searchAddressFlow = ai.defineFlow(
     outputSchema: SearchAddressOutputSchema,
   },
   async ({ query }) => {
-    // Use the single public map key for all Yandex services
-    const apiKey = process.env.NEXT_PUBLIC_YANDEX_MAP_API_KEY;
-    if (!apiKey || apiKey === 'YOUR_YANDEX_MAP_API_KEY_HERE') {
-        console.error("Yandex API key is not set in the .env file.");
-        throw new Error("Ключ API Яндекс Карт не настроен. Пожалуйста, убедитесь, что NEXT_PUBLIC_YANDEX_MAP_API_KEY задан в .env и имеет права на 'JavaScript API and HTTP Geocoder'.");
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey || apiKey === 'YOUR_GOOGLE_MAPS_API_KEY_HERE') {
+        console.error("Google Maps API key is not set in the .env file.");
+        throw new Error("Ключ API Google Карт не настроен. Пожалуйста, убедитесь, что NEXT_PUBLIC_GOOGLE_MAPS_API_KEY задан в .env и имеет права на 'Geocoding API'.");
     }
 
-    // Removed the search bias to a specific region to allow for global search results.
-    const url = `https://geocode-maps.yandex.ru/1.x/?apikey=${apiKey}&geocode=${encodeURIComponent(query)}&format=json&lang=ru_RU&results=20`;
+    const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(query)}&key=${apiKey}&language=ru`;
     
     try {
       const response = await fetch(url);
-      if (!response.ok) {
-        console.error('Error fetching from Yandex Geocoder:', response.statusText, await response.text());
-        return [];
-      }
       const data = await response.json();
       
-      const featureMembers = data.response?.GeoObjectCollection?.featureMember;
+      if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+        console.error('Error fetching from Google Geocoding API:', data.status, data.error_message);
+        throw new Error(data.error_message || `Ошибка API Google Карт: ${data.status}`);
+      }
 
-      if (Array.isArray(featureMembers)) {
-        return featureMembers
-          .map((item: any) => {
-            const geoObject = item.GeoObject;
-            if (!geoObject) return null;
-            
-            const geocoderMetaData = geoObject.metaDataProperty?.GeocoderMetaData;
-            if (!geocoderMetaData) return null;
+      if (data.results) {
+        return data.results.map((item: any) => {
+          const location = item.geometry?.location;
+          if (!item.formatted_address || !location) return null;
 
-            const address = geocoderMetaData.text;
-            const kind = geocoderMetaData.kind;
-            const pos = geoObject.Point?.pos;
-
-            if (!address || !pos) return null;
-            
-            const [lon, lat] = pos.split(' ').map(Number);
-            return { address, coords: [lat, lon], kind };
-          })
-          .filter(Boolean) as SearchAddressOutput;
+          return { 
+            address: item.formatted_address, 
+            coords: [location.lat, location.lng],
+            kind: item.types?.[0] || 'geocode'
+          };
+        }).filter(Boolean) as SearchAddressOutput;
       }
       
       return [];
     } catch (error) {
       console.error('Error in searchAddressFlow:', error);
-      return [];
+      if (error instanceof Error) throw error;
+      throw new Error('Неизвестная ошибка при поиске адреса.');
     }
   }
 );
