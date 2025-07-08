@@ -11,7 +11,6 @@ interface AuthContextType {
   logout: () => void;
   users: User[];
   addUser: (user: Omit<User, 'id'>) => void;
-  registerNewUser: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -50,21 +49,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    // This effect handles the actual authentication logic.
-    // It runs when the component mounts and whenever the list of users changes.
+    // This effect handles the actual authentication and auto-registration logic.
+    if (isAuthLoading) {
+      return; // Wait for loading screen to finish
+    }
+
     const deviceHwid = getHwid();
     setHwid(deviceHwid);
 
-    const registeredUser = users.find(u => u.hwid === deviceHwid);
-    if (registeredUser) {
-      setUser(registeredUser);
+    const existingUser = users.find(u => u.hwid === deviceHwid);
+
+    if (existingUser) {
+      // User is already registered, log them in.
+      // Guard to prevent unnecessary state updates.
+      if (!user || user.id !== existingUser.id) {
+        setUser(existingUser);
+      }
     } else {
-      setUser(null);
+      // User is not registered, so auto-register them.
+      const newUser: User = {
+        id: `user-${Date.now()}`,
+        hwid: deviceHwid,
+        username: `Kullanıcı ${deviceHwid.substring(0, 4)}`,
+        role: 'customer',
+      };
+      // This will add the new user and trigger a re-render.
+      // The next run of this effect will find and set this new user.
+      setUsers(prevUsers => [...prevUsers, newUser]);
     }
-  }, [users]);
+  }, [isAuthLoading, users, user]);
 
   const logout = () => {
-    setUser(null);
+    // "Clear Session" by removing the HWID and reloading the page.
+    // This will trigger the auth flow to generate a new HWID and a new account.
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('deviceHwid');
+      window.location.reload();
+    }
   };
   
   const addUser = useCallback((newUser: Omit<User, 'id'>) => {
@@ -83,22 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const registerNewUser = useCallback(() => {
-    const deviceHwid = getHwid();
-    if (!deviceHwid || users.some(u => u.hwid === deviceHwid)) {
-      return; // Already registered or no HWID
-    }
-    const newUser: User = {
-      id: `user-${Date.now()}`,
-      hwid: deviceHwid,
-      username: `Пользователь ${deviceHwid.substring(0, 4)}`,
-      role: 'customer',
-    };
-    setUsers(prevUsers => [...prevUsers, newUser]);
-    // The useEffect will automatically log in the user after `users` state is updated.
-  }, [users]);
-
-  const value = { user, hwid, isAuthLoading, logout, users, addUser, registerNewUser };
+  const value = { user, hwid, isAuthLoading, logout, users, addUser };
 
   return (
     <AuthContext.Provider value={value}>
