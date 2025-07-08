@@ -27,4 +27,5 @@ export interface Order {
   price: number;
   distance: number;
   createdAt: number;
+  routeGeometry?: number[][];
 }

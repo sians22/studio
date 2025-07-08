@@ -1,24 +1,108 @@
 "use client";
 
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useOrders } from "@/context/order-context";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Package, PlusCircle, MapPin, MessageSquareText } from "lucide-react";
+import { Package, PlusCircle, MapPin, MessageSquareText, Route } from "lucide-react";
 import MapOrderPage from "./map-order-page";
 import { formatDistanceToNow } from "date-fns";
 import { ru } from "date-fns/locale";
 import { Badge } from "@/components/ui/badge";
-import type { OrderStatus } from "@/types";
+import type { OrderStatus, Order } from "@/types";
+import { GoogleMap, useLoadScript, Marker, Polyline } from '@react-google-maps/api';
 
 type CustomerDashboardProps = {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 };
 
+const mapContainerStyle = {
+  width: '100%',
+  height: '250px',
+  borderRadius: '0.5rem',
+};
+
+const mapOptions = {
+  disableDefaultUI: true,
+  zoomControl: false,
+  clickableIcons: false,
+};
+
+const LIBRARIES: ('places' | 'drawing' | 'geometry' | 'visualization')[] = ['places'];
+
+const MARKER_ICON_GREEN = `data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3e%3cpath fill='%2316a34a' d='M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67a24 24 0 01-35.464 0zM192 272a80 80 0 100-160 80 80 0 000 160z'/%3e%3c/svg%3e`;
+const MARKER_ICON_RED = `data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 384 512'%3e%3cpath fill='%23dc2626' d='M172.268 501.67C26.97 291.031 0 269.413 0 192 0 85.961 85.961 0 192 0s192 85.961 192 192c0 77.413-26.97 99.031-172.268 309.67a24 24 0 01-35.464 0zM192 272a80 80 0 100-160 80 80 0 000 160z'/%3e%3c/svg%3e`;
+const COURIER_ICON = `data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='hsl(var(--primary))' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3ccircle cx='12' cy='12' r='10' fill='white' /%3e%3ccircle cx='12' cy='10' r='3'/%3e%3cpath d='M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662'/%3e%3c/svg%3e`;
+
+
+const OrderTrackingMap = ({ order }: { order: Order }) => {
+    const route = useMemo(() => {
+      if (!order.routeGeometry) return [];
+      return order.routeGeometry.map(coords => ({ lat: coords[0], lng: coords[1] }));
+    }, [order.routeGeometry]);
+
+    const [courierPosition, setCourierPosition] = useState(route[0]);
+    const mapRef = useRef<any>(null);
+
+    useEffect(() => {
+        if (!route.length) return;
+
+        const totalSteps = route.length - 1;
+        if (totalSteps <= 0) return;
+        
+        let step = 0;
+        const interval = setInterval(() => {
+            step++;
+            setCourierPosition(route[step]);
+
+            if (step === totalSteps) {
+                clearInterval(interval);
+            }
+        }, 2000); // Update every 2 seconds for simulation
+
+        return () => clearInterval(interval);
+    }, [route]);
+
+    const onMapLoad = useCallback((map: any) => {
+        mapRef.current = map;
+        if (route.length > 1) {
+            const bounds = new window.google.maps.LatLngBounds();
+            route.forEach(point => bounds.extend(point));
+            map.fitBounds(bounds, 50);
+        }
+    }, [route]);
+
+    if (!order.routeGeometry) return null;
+
+    return (
+        <div className="mt-2 h-[250px] w-full">
+            <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                options={mapOptions}
+                onLoad={onMapLoad}
+            >
+                <Marker position={route[0]} icon={{ url: MARKER_ICON_GREEN, scaledSize: new window.google.maps.Size(25, 32) }} />
+                <Marker position={route[route.length - 1]} icon={{ url: MARKER_ICON_RED, scaledSize: new window.google.maps.Size(25, 32) }} />
+                <Polyline path={route} options={{ strokeColor: 'hsl(var(--primary))', strokeWeight: 4, strokeOpacity: 0.7 }} />
+                <Marker position={courierPosition} icon={{ url: COURIER_ICON, scaledSize: new window.google.maps.Size(32, 32) }} zIndex={99} />
+            </GoogleMap>
+        </div>
+    );
+};
+
+
 export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerDashboardProps) {
   const { user } = useAuth();
   const { orders, updateOrderStatus } = useOrders();
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || "";
+  const { isLoaded } = useLoadScript({
+    googleMapsApiKey: apiKey,
+    libraries: LIBRARIES,
+  });
 
   const customerOrders = orders.filter((order) => order.customerId === user?.id);
 
@@ -113,9 +197,18 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                      </div>
                   </div>
                 )}
+                 {expandedOrderId === order.id && isLoaded && ['Принят', 'В пути'].includes(order.status) && (
+                    <OrderTrackingMap order={order} />
+                 )}
               </CardContent>
+              <CardFooter className="flex flex-col items-stretch gap-2 bg-muted/30 p-2">
+                 {['Принят', 'В пути'].includes(order.status) && (
+                   <Button variant="outline" onClick={() => setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}>
+                      <Route className="mr-2"/>
+                      {expandedOrderId === order.id ? 'Скрыть карту' : 'Трек заказа'}
+                   </Button>
+                 )}
                 {!['Доставлен', 'Отменен'].includes(order.status) && (
-                  <CardFooter className="bg-muted/30 p-2">
                     <Button
                       variant="ghost"
                       className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
@@ -124,8 +217,8 @@ export default function CustomerDashboard({ activeTab, setActiveTab }: CustomerD
                     >
                       Отменить заказ
                     </Button>
-                  </CardFooter>
                 )}
+              </CardFooter>
             </Card>
           ))}
         </div>

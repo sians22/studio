@@ -15,7 +15,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, ArrowLeft, MapPin, Phone, MessageSquareText, Rocket, X, CheckCircle } from 'lucide-react';
+import { Loader2, ArrowLeft, MapPin, Phone, MessageSquareText, Rocket, X, CheckCircle, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type AddressFocus = 'pickup' | 'dropoff';
@@ -158,7 +158,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
         const bounds = new window.google.maps.LatLngBounds();
         bounds.extend(new window.google.maps.LatLng(pickup.coords[0], pickup.coords[1]));
         bounds.extend(new window.google.maps.LatLng(dropoff.coords[0], dropoff.coords[1]));
-        mapRef.current.fitBounds(bounds);
+        mapRef.current.fitBounds(bounds, 100); // 100px padding
     } else if(mapRef.current && pickup) {
         mapRef.current.panTo({ lat: pickup.coords[0], lng: pickup.coords[1] });
         mapRef.current.setZoom(15);
@@ -180,6 +180,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
       description,
       price: priceInfo.priceTl,
       distance: priceInfo.distanceKm,
+      routeGeometry: priceInfo.routeGeometry,
     });
     setIsConfirmed(true);
   };
@@ -230,48 +231,48 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
 
     if (priceInfo) {
          return (
-            <div className="flex h-full flex-col">
-              <CardHeader className="flex-shrink-0 p-4">
-                <div className="flex items-center gap-2">
-                   <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8" onClick={() => { setPriceInfo(null); setDropoff(null); setAddressFocus('dropoff'); }}>
-                        <ArrowLeft />
-                   </Button>
-                   <CardTitle className="text-lg">Подтверждение заказа</CardTitle>
+            <div className="flex flex-col h-full">
+                <CardHeader className="flex-shrink-0 p-4">
+                    <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8" onClick={() => { setPriceInfo(null); setDropoff(null); setAddressFocus('dropoff'); }}>
+                            <ArrowLeft />
+                    </Button>
+                    <CardTitle className="text-lg">Подтверждение заказа</CardTitle>
+                    </div>
+                </CardHeader>
+                <div className="flex-1 space-y-3 overflow-y-auto px-4 py-1">
+                    <div className="flex items-center justify-between rounded-lg bg-muted p-3">
+                        <div>
+                            <div className="text-sm text-muted-foreground">Расстояние</div>
+                            <div className="font-bold">{priceInfo?.distanceKm} km</div>
+                        </div>
+                        <div>
+                            <div className="text-sm text-muted-foreground">Цена</div>
+                            <div className="text-2xl font-bold text-primary">{priceInfo?.priceTl} руб.</div>
+                        </div>
+                    </div>
+                    <p className="px-1 text-xs text-muted-foreground">{priceInfo?.pricingDetails}</p>
+                    
+                    <div className="space-y-3">
+                        <div className="space-y-1">
+                            <label className="px-1 text-sm font-medium">Телефон отправителя</label>
+                            <div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={senderPhone} onChange={e => setSenderPhone(e.target.value)} className="pl-9" /></div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="px-1 text-sm font-medium">Телефон получателя</label>
+                            <div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={receiverPhone} onChange={e => setReceiverPhone(e.target.value)} className="pl-9" /></div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="px-1 text-sm font-medium">Примечание (необязательно)</label>
+                            <div className="relative"><MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Textarea placeholder="Что-то важное..." value={description} onChange={e => setDescription(e.target.value)} className="pl-9" /></div>
+                        </div>
+                    </div>
                 </div>
-              </CardHeader>
-              <div className="flex-1 space-y-3 overflow-y-auto px-4">
-                 <div className="flex items-center justify-between rounded-lg bg-muted p-3">
-                   <div>
-                     <div className="text-sm text-muted-foreground">Расстояние</div>
-                     <div className="font-bold">{priceInfo?.distanceKm} km</div>
-                   </div>
-                   <div>
-                     <div className="text-sm text-muted-foreground">Цена</div>
-                     <div className="text-2xl font-bold text-primary">{priceInfo?.priceTl} руб.</div>
-                   </div>
-                 </div>
-                 <p className="px-1 text-xs text-muted-foreground">{priceInfo?.pricingDetails}</p>
-                 
-                 <div className="space-y-3">
-                   <div className="space-y-1">
-                     <label className="px-1 text-sm font-medium">Телефон отправителя</label>
-                     <div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={senderPhone} onChange={e => setSenderPhone(e.target.value)} className="pl-9" /></div>
-                   </div>
-                   <div className="space-y-1">
-                     <label className="px-1 text-sm font-medium">Телефон получателя</label>
-                     <div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={receiverPhone} onChange={e => setReceiverPhone(e.target.value)} className="pl-9" /></div>
-                   </div>
-                   <div className="space-y-1">
-                     <label className="px-1 text-sm font-medium">Примечание (необязательно)</label>
-                     <div className="relative"><MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Textarea placeholder="Что-то важное..." value={description} onChange={e => setDescription(e.target.value)} className="pl-9" /></div>
-                   </div>
-                 </div>
-              </div>
-              <CardFooter className="flex-shrink-0 p-4">
-                <Button className="w-full" onClick={handleConfirmOrder} disabled={isLoading}>
-                  {isLoading ? <Loader2 className="animate-spin" /> : <><Rocket className="mr-2"/>Подтвердить и заказать</> }
-                </Button>
-              </CardFooter>
+                <CardFooter className="flex-shrink-0 p-4">
+                    <Button className="w-full" onClick={handleConfirmOrder} disabled={isLoading}>
+                    {isLoading ? <Loader2 className="animate-spin" /> : <><Rocket className="mr-2"/>Подтвердить и заказать</> }
+                    </Button>
+                </CardFooter>
             </div>
          );
     }
@@ -282,14 +283,16 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 <CardTitle>Создать заказ</CardTitle>
                 <CardDescription>Укажите адреса отправления и назначения.</CardDescription>
             </CardHeader>
-            <div className="flex flex-1 flex-col space-y-2 overflow-hidden px-6 pb-6">
+            <div className="flex flex-1 flex-col space-y-2 overflow-hidden px-4 pb-4">
                 <div 
-                    className={cn("flex shrink-0 cursor-text items-center gap-3 rounded-md border p-2", addressFocus === 'pickup' && 'ring-2 ring-primary')}
+                    className={cn("flex shrink-0 cursor-text items-center gap-2 rounded-md border p-2", addressFocus === 'pickup' && 'ring-2 ring-primary')}
                     onClick={() => { if (addressFocus !== 'pickup') { setAddressFocus('pickup'); setSearchQuery(pickup?.address || ''); setTimeout(() => inputRef.current?.focus(), 100); } }}
                 >
                      <MapPin className="h-5 w-5 shrink-0 text-green-500" />
                     {addressFocus === 'pickup' ? (
-                        <Input ref={inputRef} placeholder="Откуда?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-auto w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0" autoFocus />
+                        <div className="relative flex-1">
+                            <Input ref={inputRef} placeholder="Откуда?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-auto w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0" autoFocus />
+                        </div>
                     ) : (
                         <div className="flex-1 text-sm">{pickup ? <span className="truncate">{pickup.address}</span> : <span className="text-muted-foreground">Откуда?</span>}</div>
                     )}
@@ -297,12 +300,14 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 </div>
 
                 <div 
-                    className={cn("flex shrink-0 cursor-text items-center gap-3 rounded-md border p-2", addressFocus === 'dropoff' && 'ring-2 ring-primary')}
-                     onClick={() => { if (addressFocus !== 'dropoff') { setAddressFocus('dropoff'); setSearchQuery(dropoff?.address || ''); setTimeout(() => inputRef.current?.focus(), 100); } }}
+                    className={cn("flex shrink-0 cursor-text items-center gap-2 rounded-md border p-2", addressFocus === 'dropoff' && 'ring-2 ring-primary')}
+                     onClick={() => { if (addressFocus !== 'dropoff' && pickup) { setAddressFocus('dropoff'); setSearchQuery(dropoff?.address || ''); setTimeout(() => inputRef.current?.focus(), 100); } }}
                 >
                     <MapPin className="h-5 w-5 shrink-0 text-red-500" />
                     {addressFocus === 'dropoff' ? (
-                       <Input ref={inputRef} placeholder="Куда?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-auto w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0" autoFocus />
+                        <div className="relative flex-1">
+                          <Input ref={inputRef} placeholder="Куда?" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-auto w-full border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0" autoFocus />
+                        </div>
                     ) : (
                         <div className="flex-1 text-sm">{dropoff ? <span className="truncate">{dropoff.address}</span> : <span className="text-muted-foreground">Куда?</span>}</div>
                     )}
@@ -314,7 +319,10 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                     {suggestions.length > 0 && !isSearching && (
                       <div className="rounded-md border">
                         {suggestions.map((s, index) => (
-                          <div key={`${s.address}-${index}`} onClick={() => handleSelectAddress(s)} className="cursor-pointer p-2 pl-4 text-sm hover:bg-muted">{s.address}</div>
+                           <div key={`${s.address}-${index}-${s.coords[0]}`} onClick={() => handleSelectAddress(s)} className="cursor-pointer p-3 text-sm hover:bg-muted border-b last:border-b-0 flex items-start gap-3">
+                            <Search className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0"/>
+                            <span>{s.address}</span>
+                          </div>
                         ))}
                       </div>
                     )}
@@ -338,10 +346,13 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
       >
         {pickup && <Marker position={{ lat: pickup.coords[0], lng: pickup.coords[1] }} icon={{ url: MARKER_ICON_GREEN, scaledSize: new window.google.maps.Size(30, 40) }} />}
         {dropoff && <Marker position={{ lat: dropoff.coords[0], lng: dropoff.coords[1] }} icon={{ url: MARKER_ICON_RED, scaledSize: new window.google.maps.Size(30, 40) }} />}
-        {polylinePath.length > 0 && <Polyline path={polylinePath} options={{ strokeColor: '#1a73e8', strokeWeight: 5, strokeOpacity: 0.8 }} />}
+        {polylinePath.length > 0 && <Polyline path={polylinePath} options={{ strokeColor: 'hsl(var(--primary))', strokeWeight: 5, strokeOpacity: 0.8 }} />}
       </GoogleMap>
       
       <div className="pointer-events-none absolute inset-0 flex flex-col p-2 md:p-4">
+          <Button variant="secondary" onClick={onDone} className="pointer-events-auto absolute top-2 left-2 z-10 md:hidden">
+            <ArrowLeft />
+          </Button>
           <Button variant="secondary" onClick={onDone} className="pointer-events-auto absolute top-4 left-4 z-10 hidden md:flex">
             <ArrowLeft className="mr-2"/> К заказам
           </Button>
