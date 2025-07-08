@@ -228,30 +228,36 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 {/* Pickup Field */}
                 <div 
                     className={cn(
-                        "flex shrink-0 items-center gap-3 rounded-md border p-2", 
+                        "flex shrink-0 items-center gap-2 rounded-md border p-2",
                         addressFocus === 'pickup' && 'ring-2 ring-primary'
                     )}
                     onClick={() => {
                         if (addressFocus !== 'pickup') {
                             setAddressFocus('pickup');
                             setSearchQuery(pickup?.address || '');
+                            setTimeout(() => inputRef.current?.focus(), 100);
                         }
                     }}
                 >
-                    <MapPin className="h-5 w-5 text-green-500" />
                     {addressFocus === 'pickup' ? (
-                        <Input
-                            ref={inputRef}
-                            placeholder="Откуда?"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-auto flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                            autoFocus
-                        />
-                    ) : (
-                        <div className="flex-1 cursor-pointer text-sm">
-                            {pickup ? <span className="truncate">{pickup.address}</span> : <span className="text-muted-foreground">Откуда?</span>}
+                        <div className="relative flex-1">
+                            <MapPin className="pointer-events-none absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 text-green-500" />
+                            <Input
+                                ref={inputRef}
+                                placeholder="Откуда?"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="h-auto w-full border-0 bg-transparent p-0 pl-7 focus-visible:ring-0 focus-visible:ring-offset-0"
+                                autoFocus
+                            />
                         </div>
+                    ) : (
+                        <>
+                            <MapPin className="h-5 w-5 text-green-500" />
+                            <div className="flex-1 cursor-pointer text-sm">
+                                {pickup ? <span className="truncate">{pickup.address}</span> : <span className="text-muted-foreground">Откуда?</span>}
+                            </div>
+                        </>
                     )}
                     {pickup && (
                         <Button 
@@ -275,30 +281,36 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 {/* Dropoff Field */}
                 <div 
                     className={cn(
-                        "flex shrink-0 items-center gap-3 rounded-md border p-2", 
+                        "flex shrink-0 items-center gap-2 rounded-md border p-2",
                         addressFocus === 'dropoff' && 'ring-2 ring-primary'
                     )}
                     onClick={() => {
                         if (addressFocus !== 'dropoff') {
                             setAddressFocus('dropoff');
                             setSearchQuery(dropoff?.address || '');
+                            setTimeout(() => inputRef.current?.focus(), 100);
                         }
                     }}
                 >
-                    <MapPin className="h-5 w-5 text-red-500" />
                     {addressFocus === 'dropoff' ? (
-                        <Input
-                            ref={inputRef}
-                            placeholder="Куда?"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="h-auto flex-1 border-0 bg-transparent p-0 focus-visible:ring-0 focus-visible:ring-offset-0"
-                            autoFocus
-                        />
+                        <div className="relative flex-1">
+                           <MapPin className="pointer-events-none absolute left-1 top-1/2 h-5 w-5 -translate-y-1/2 text-red-500" />
+                           <Input
+                               ref={inputRef}
+                               placeholder="Куда?"
+                               value={searchQuery}
+                               onChange={(e) => setSearchQuery(e.target.value)}
+                               className="h-auto w-full border-0 bg-transparent p-0 pl-7 focus-visible:ring-0 focus-visible:ring-offset-0"
+                               autoFocus
+                           />
+                       </div>
                     ) : (
-                        <div className="flex-1 cursor-pointer text-sm">
-                            {dropoff ? <span className="truncate">{dropoff.address}</span> : <span className="text-muted-foreground">Куда?</span>}
-                        </div>
+                        <>
+                            <MapPin className="h-5 w-5 text-red-500" />
+                            <div className="flex-1 cursor-pointer text-sm">
+                                {dropoff ? <span className="truncate">{dropoff.address}</span> : <span className="text-muted-foreground">Куда?</span>}
+                            </div>
+                        </>
                     )}
                      {dropoff && (
                         <Button 
