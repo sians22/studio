@@ -1,4 +1,4 @@
-import type {Metadata} from 'next';
+import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import {Toaster} from '@/components/ui/toaster';
 import {AuthProvider} from '@/context/auth-context';
@@ -10,7 +10,27 @@ export const metadata: Metadata = {
   title: 'Быстрый Курьер',
   description: 'Быстрый Курьер - Ваш быстрый и надежный партнер по доставке.',
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Быстрый Курьер',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 };
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#FFFFFF' },
+    { media: '(prefers-color-scheme: dark)', color: '#0A0A0A' },
+  ],
+};
+
 
 export default function RootLayout({
   children,
