@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from 'react';
@@ -182,7 +183,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
     if (priceInfo) {
          return (
             <>
-              <CardHeader>
+              <CardHeader className="p-4">
                 <div className="flex items-center gap-2">
                    <Button variant="ghost" size="icon" onClick={() => { setPriceInfo(null); setDropoff(null); setAddressFocus('dropoff'); }}>
                         <ArrowLeft />
@@ -190,7 +191,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                    <CardTitle>Подтверждение заказа</CardTitle>
                 </div>
               </CardHeader>
-              <CardContent className="flex-1 space-y-4 overflow-y-auto no-scrollbar">
+              <CardContent className="flex-1 space-y-3 overflow-y-auto no-scrollbar p-4 pt-0">
                 <div className="flex items-center justify-between rounded-lg bg-muted p-3">
                   <div>
                     <div className="text-sm text-muted-foreground">Расстояние</div>
@@ -203,13 +204,13 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
                 </div>
                 <p className="text-xs text-muted-foreground">{priceInfo?.pricingDetails}</p>
                 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                   <div className="space-y-2"><label className="text-sm font-medium">Телефон отправителя</label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={senderPhone} onChange={e => setSenderPhone(e.target.value)} className="pl-10" /></div></div>
                   <div className="space-y-2"><label className="text-sm font-medium">Телефон получателя</label><div className="relative"><Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input type="tel" placeholder="+7..." value={receiverPhone} onChange={e => setReceiverPhone(e.target.value)} className="pl-10" /></div></div>
                 </div>
                 <div className="space-y-2"><label className="text-sm font-medium">Примечание (необязательно)</label><div className="relative"><MessageSquareText className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Textarea placeholder="Что-то важное..." value={description} onChange={e => setDescription(e.target.value)} className="pl-10" /></div></div>
               </CardContent>
-              <CardFooter>
+              <CardFooter className="p-4">
                 <Button className="w-full" onClick={handleConfirmOrder} disabled={isLoading}>
                   {isLoading ? <Loader2 className="animate-spin" /> : <><Rocket className="mr-2"/>Подтвердить и заказать</> }
                 </Button>
@@ -412,7 +413,7 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
               <ArrowLeft />
             </Button>
              <div className="pointer-events-auto mt-14 flex w-full max-w-md flex-1 flex-col self-center md:mt-0 md:self-start">
-                 <Card className="flex flex-1 flex-col">
+                 <Card className="flex flex-1 flex-col overflow-hidden">
                     {renderPanel()}
                  </Card>
             </div>
@@ -421,3 +422,4 @@ export default function MapOrderPage({ onDone }: { onDone: () => void }) {
     </YMaps>
   );
 }
+
