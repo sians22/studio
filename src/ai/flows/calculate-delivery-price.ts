@@ -30,16 +30,13 @@ async function getRouteDistance(startCoords: [number, number], endCoords: [numbe
 
         if (!response.ok) {
             console.error("Yandex Directions API error response:", JSON.stringify(data, null, 2));
-             if(response.status === 401) {
-                throw new Error("Ошибка аутентификации (401). Ваш ключ API для маршрутов недействителен или у него нет доступа к 'Directions API'. Пожалуйста, проверьте в Кабинете разработчика Яндекс, что для вашего ключа подключен сервис 'Directions API'.");
+             if (response.status === 401 || response.status === 403) {
+                throw new Error("Ошибка API Маршрутов (401/403). Похоже, ваш API-ключ недействителен или у него нет прав на 'Directions API'. Пожалуйста, перейдите в Кабинет разработчика Яндекс, выберите ваш ключ и убедитесь, что сервис 'Directions API' для него подключен и активен.");
             }
-            if(response.status === 403) {
-                throw new Error("Ошибка доступа к API Маршрутов (403). Убедитесь, что ваш ключ (NEXT_PUBLIC_YANDEX_MAP_API_KEY) имеет права на 'Directions API' в кабинете разработчика Яндекс.");
+            if (response.status === 404 && data?.message?.includes("point not found")) {
+                throw new Error("Ошибка 404: Не удалось найти одну из точек на дороге. Попробуйте выбрать адреса ближе к проезжей части.");
             }
-             if (response.status === 404 && data?.message?.includes("point not found")) {
-                throw new Error("Ошибка 404: Не удалось найти одну из точек на дороге. Попробуйте выбрать точки ближе к проезжей части.");
-            }
-            const errorMessage = data?.message || `Ошибка API Яндекс Маршрутов: ${response.status}.`;
+            const errorMessage = data?.message || `Неизвестная ошибка от API Яндекс Маршрутов (Статус: ${response.status}).`;
             throw new Error(errorMessage);
         }
 
